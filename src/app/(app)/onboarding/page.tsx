@@ -4,8 +4,10 @@ import { useRouter } from "next/navigation";
 import { Users, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUIStore } from "@/store/ui-store";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function OnboardingPage() {
+  usePageTitle("Welcome");
   const router = useRouter();
   const openCreateGroup = useUIStore((s) => s.openCreateGroup);
 

@@ -1,9 +1,10 @@
 /**
- * Centralized Axios instance.
- * - Attaches JWT from localStorage on every request
+ * Centralized Axios instance with security hardening.
+ * - Attaches JWT from auth store on every request
  * - Handles 401 → clears auth state and redirects to /login
- *   (only for non-auth endpoints to avoid logout loops)
  * - Normalizes error shapes into ApiError (extends Error)
+ * - Strips dangerous content from outgoing requests
+ * - Adds request ID for tracing
  */
 import axios, {
   AxiosError,
@@ -11,6 +12,7 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios";
 import { useAuthStore } from "@/store/auth-store";
+import { stripHtml } from "@/utils/sanitize";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
@@ -32,11 +34,31 @@ export const apiClient: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   headers: { "Content-Type": "application/json" },
   timeout: 15_000,
+  // Don't send cookies to third-party domains
+  withCredentials: false,
 });
 
-// ─── Request interceptor: attach Bearer token ─────────────────────────────────
+/**
+ * Recursively sanitize string values in an object to strip HTML tags.
+ * Prevents stored XSS via API submissions.
+ */
+function sanitizePayload(data: unknown): unknown {
+  if (typeof data === "string") return stripHtml(data);
+  if (Array.isArray(data)) return data.map(sanitizePayload);
+  if (data && typeof data === "object" && !(data instanceof FormData)) {
+    const sanitized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+      sanitized[key] = sanitizePayload(value);
+    }
+    return sanitized;
+  }
+  return data;
+}
+
+// ─── Request interceptor ──────────────────────────────────────────────────────
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Attach JWT token
     const token =
       typeof window !== "undefined"
         ? useAuthStore.getState().token
@@ -45,26 +67,37 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Add request ID for tracing
+    config.headers["X-Request-Id"] = crypto.randomUUID?.() ?? `${Date.now()}`;
+
+    // Sanitize JSON payloads (not FormData — that's for file uploads)
+    if (config.data && !(config.data instanceof FormData)) {
+      config.data = sanitizePayload(config.data);
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// ─── Response interceptor: normalize errors ───────────────────────────────────
+// ─── Response interceptor ─────────────────────────────────────────────────────
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     const status = error.response?.status ?? 0;
     const url = error.config?.url ?? "";
 
-    // Only auto-logout on 401 if:
-    // 1. It's not an auth endpoint (avoid logout loop on login/register)
-    // 2. It's not a network error (status 0 = server unreachable)
-    // 3. We're in the browser
+    // Auto-logout on 401 (except auth endpoints and network errors)
     const isAuthEndpoint = url.includes("/api/v1/auth/");
     if (status === 401 && !isAuthEndpoint && typeof window !== "undefined") {
       useAuthStore.getState().logout();
       window.location.href = "/login";
+    }
+
+    // Rate limited
+    if (status === 429) {
+      return Promise.reject(new ApiError(429, "Too many requests. Please wait a moment."));
     }
 
     const message =

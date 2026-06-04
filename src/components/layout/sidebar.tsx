@@ -16,6 +16,7 @@ import {
   X,
   Search,
   Settings,
+  MessageCircle,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
@@ -24,6 +25,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useCurrentUser } from "@/hooks/use-user";
 import { useUnreadCount } from "@/hooks/use-notifications";
+import { useTotalUnread } from "@/hooks/use-chat";
 import { useUIStore } from "@/store/ui-store";
 import { useLogout } from "@/hooks/use-auth";
 import { useAuthStore } from "@/store/auth-store";
@@ -32,6 +34,7 @@ const navItems = [
   { href: "/feed", icon: Home, label: "Feed" },
   { href: "/groups", icon: Users, label: "Groups" },
   { href: "/meetings", icon: Video, label: "Meetings" },
+  { href: "/chat", icon: MessageCircle, label: "Messages", badge: true },
   { href: "/notifications", icon: Bell, label: "Notifications", badge: true },
   { href: "/profile", icon: User, label: "Profile" },
 ];
@@ -81,6 +84,7 @@ function NavItem({
 export function Sidebar() {
   const { data: currentUser } = useCurrentUser();
   const { data: unreadCount } = useUnreadCount();
+  const chatUnread = useTotalUnread();
   const { openCreatePost, openCreateGroup, isSidebarOpen, closeSidebar } = useUIStore();
   const openSearch = useUIStore((s) => s.openSearch);
   const { resolvedTheme, setTheme } = useTheme();
@@ -107,7 +111,13 @@ export function Sidebar() {
           <NavItem
             key={item.href}
             {...item}
-            unreadCount={unreadCount ?? 0}
+            unreadCount={
+              item.href === "/chat"
+                ? chatUnread
+                : item.href === "/notifications"
+                  ? (unreadCount ?? 0)
+                  : 0
+            }
             onClick={closeSidebar}
           />
         ))}

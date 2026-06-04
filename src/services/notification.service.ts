@@ -3,22 +3,34 @@ import type { NotificationDto } from "@/types";
 
 export const notificationService = {
   getAll: async (): Promise<NotificationDto[]> => {
-    const res = await apiClient.get<NotificationDto[]>("/api/v1/notifications");
-    return res.data;
+    try {
+      const res = await apiClient.get<NotificationDto[]>("/api/v1/notifications");
+      return res.data;
+    } catch {
+      return [];
+    }
   },
 
   getUnread: async (): Promise<NotificationDto[]> => {
-    const res = await apiClient.get<NotificationDto[]>(
-      "/api/v1/notifications/unread"
-    );
-    return res.data;
+    try {
+      const res = await apiClient.get<NotificationDto[]>(
+        "/api/v1/notifications/unread"
+      );
+      return res.data;
+    } catch {
+      return [];
+    }
   },
 
   getUnreadCount: async (): Promise<number> => {
-    const res = await apiClient.get<number>(
-      "/api/v1/notifications/unread/count"
-    );
-    return res.data;
+    try {
+      const res = await apiClient.get<number>(
+        "/api/v1/notifications/unread/count"
+      );
+      return res.data;
+    } catch {
+      return 0;
+    }
   },
 
   markAsRead: async (notificationId: string): Promise<void> => {

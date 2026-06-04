@@ -2,21 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Users, Bell, User, Video } from "lucide-react";
+import { Home, Users, MessageCircle, Bell, User } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useUnreadCount } from "@/hooks/use-notifications";
+import { useTotalUnread } from "@/hooks/use-chat";
 
 const navItems = [
-  { href: "/feed", icon: Home, label: "Feed" },
+  { href: "/feed", icon: Home, label: "Home" },
   { href: "/groups", icon: Users, label: "Groups" },
-  { href: "/meetings", icon: Video, label: "Meetings" },
+  { href: "/chat", icon: MessageCircle, label: "Chat" },
   { href: "/notifications", icon: Bell, label: "Alerts" },
   { href: "/profile", icon: User, label: "Profile" },
 ];
 
 export function MobileNav() {
   const pathname = usePathname();
-  const { data: unreadCount } = useUnreadCount();
+  const { data: unreadNotifs } = useUnreadCount();
+  const chatUnread = useTotalUnread();
 
   return (
     <nav
@@ -27,7 +29,12 @@ export function MobileNav() {
       <div className="flex items-center justify-around px-2 py-2">
         {navItems.map(({ href, icon: Icon, label }) => {
           const isActive = pathname === href || pathname.startsWith(href + "/");
-          const isBell = href === "/notifications";
+          const badgeCount =
+            href === "/notifications"
+              ? (unreadNotifs ?? 0)
+              : href === "/chat"
+                ? chatUnread
+                : 0;
 
           return (
             <Link
@@ -43,14 +50,14 @@ export function MobileNav() {
             >
               <div className="relative">
                 <Icon className="h-5 w-5" aria-hidden="true" />
-                {isBell && unreadCount && unreadCount > 0 ? (
+                {badgeCount > 0 && (
                   <span
                     className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center"
-                    aria-label={`${unreadCount} unread notifications`}
+                    aria-label={`${badgeCount} unread`}
                   >
-                    {unreadCount > 9 ? "9+" : unreadCount}
+                    {badgeCount > 9 ? "9+" : badgeCount}
                   </span>
-                ) : null}
+                )}
               </div>
               <span className="text-[10px] font-medium">{label}</span>
             </Link>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Heart, MessageCircle, Share2, MoreHorizontal } from "lucide-react";
-import { motion } from "framer-motion";
+import { useState, useCallback, useRef } from "react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, Send } from "lucide-react";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { Avatar } from "@/components/ui/avatar";
 import { MediaImage } from "@/components/ui/media-image";
 import { Lightbox } from "@/components/ui/lightbox";
@@ -19,143 +20,162 @@ interface PostCardProps {
 export function PostCard({ post }: PostCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [showHeart, setShowHeart] = useState(false);
+  const lastTapRef = useRef(0);
   const likePost = useLikePost();
 
   const handleLike = useCallback(() => {
     if (liked) return;
-    // Optimistic update
     setLiked(true);
     likePost.mutate(
       { groupId: post.groupId, postId: post.postId },
-      {
-        onError: () => {
-          // Revert on failure
-          setLiked(false);
-          toast.error("Failed to like post");
-        },
-      }
+      { onError: () => { setLiked(false); toast.error("Failed to like"); } }
     );
   }, [liked, likePost, post.groupId, post.postId]);
+
+  // Double-tap to like (on media area)
+  const handleDoubleTap = useCallback(() => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      if (!liked) handleLike();
+      setShowHeart(true);
+      setTimeout(() => setShowHeart(false), 800);
+    }
+    lastTapRef.current = now;
+  }, [liked, handleLike]);
 
   const handleShare = useCallback(async () => {
     const url = `${window.location.origin}/groups/${post.groupId}`;
     if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Post by ${post.authorName}`,
-          text: post.content.slice(0, 100),
-          url,
-        });
-      } catch {
-        // User cancelled share
-      }
+      try { await navigator.share({ title: `Post by ${post.authorName}`, text: post.content.slice(0, 100), url }); } catch {}
     } else {
       await navigator.clipboard.writeText(url);
-      toast.success("Link copied to clipboard");
+      toast.success("Link copied");
     }
   }, [post]);
 
+  // Expand long text
+  const [expanded, setExpanded] = useState(false);
+  const isLong = post.content.length > 300;
+  const displayContent = isLong && !expanded ? post.content.slice(0, 300) + "…" : post.content;
+
   return (
     <motion.article
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="card p-5 space-y-4"
+      transition={{ duration: 0.3 }}
+      className="card overflow-hidden"
       role="article"
       aria-label={`Post by ${post.authorName}`}
     >
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 px-4 pt-4 pb-2">
+        <Link href={`/profile/${post.authorId}`}>
           <Avatar name={post.authorName} size="md" />
-          <div>
-            <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
-              {post.authorName}
-            </p>
-            <time className="text-xs text-gray-400" dateTime={post.createdAt}>
-              {timeAgo(post.createdAt)}
-            </time>
-          </div>
+        </Link>
+        <div className="flex-1 min-w-0">
+          <Link href={`/profile/${post.authorId}`} className="hover:underline">
+            <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{post.authorName}</p>
+          </Link>
+          <time className="text-xs text-gray-400" dateTime={post.createdAt}>{timeAgo(post.createdAt)}</time>
         </div>
-        <button
-          className="btn-ghost p-1.5 rounded-lg"
-          aria-label="More options for this post"
-        >
+        <button className="btn-ghost p-1.5 rounded-lg" aria-label="More options">
           <MoreHorizontal className="h-4 w-4" />
         </button>
       </div>
 
-      {/* Content */}
-      <p className="text-gray-800 dark:text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">
-        {post.content}
-      </p>
-
-      {/* Media — clickable for lightbox */}
+      {/* Media — full width, double-tap to like */}
       {post.mediaUrl && (
-        <button
-          onClick={() => setLightboxOpen(true)}
-          className="w-full cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-brand-500 rounded-xl"
-          aria-label="View image full screen"
-        >
-          <MediaImage src={post.mediaUrl} alt={`Media from ${post.authorName}`} />
-        </button>
+        <div className="relative" onClick={handleDoubleTap}>
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
+            className="w-full cursor-zoom-in focus:outline-none"
+            aria-label="View full screen"
+          >
+            <MediaImage src={post.mediaUrl} alt={`Media from ${post.authorName}`} className="rounded-none" />
+          </button>
+          {/* Double-tap heart animation */}
+          <AnimatePresence>
+            {showHeart && (
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 1.5, opacity: 0 }}
+                transition={{ duration: 0.4 }}
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              >
+                <Heart className="h-20 w-20 text-white fill-white drop-shadow-2xl" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       )}
 
-      {/* Lightbox */}
       {post.mediaUrl && (
-        <Lightbox
-          src={post.mediaUrl}
-          alt={`Media from ${post.authorName}`}
-          open={lightboxOpen}
-          onClose={() => setLightboxOpen(false)}
-        />
+        <Lightbox src={post.mediaUrl} alt={`Media from ${post.authorName}`} open={lightboxOpen} onClose={() => setLightboxOpen(false)} />
       )}
 
-      {/* Actions */}
-      <div
-        className="flex items-center gap-1 pt-1 border-t border-gray-100 dark:border-gray-800"
-        role="group"
-        aria-label="Post actions"
-      >
-        <button
-          onClick={handleLike}
-          className={`btn-ghost flex items-center gap-1.5 text-sm transition-colors ${
-            liked ? "text-red-500" : ""
-          }`}
-          aria-label={liked ? "Liked" : "Like post"}
-          aria-pressed={liked}
-        >
-          <Heart
-            className={`h-4 w-4 transition-all ${
-              liked ? "fill-red-500 text-red-500 scale-110" : ""
-            }`}
-          />
-          <span>{formatNumber(post.likeCount + (liked ? 1 : 0))}</span>
-        </button>
-
-        <button
-          onClick={() => setShowComments((v) => !v)}
-          className="btn-ghost flex items-center gap-1.5 text-sm"
-          aria-label={`${post.commentCount} comments. ${showComments ? "Hide" : "Show"} comments`}
-          aria-expanded={showComments}
-        >
-          <MessageCircle className="h-4 w-4" />
-          <span>{formatNumber(post.commentCount)}</span>
-        </button>
-
-        <button
-          onClick={handleShare}
-          className="btn-ghost ml-auto"
-          aria-label="Share post"
-        >
-          <Share2 className="h-4 w-4" />
+      {/* Actions row — Instagram style */}
+      <div className="flex items-center px-4 pt-3 pb-1" role="group" aria-label="Post actions">
+        <div className="flex items-center gap-3">
+          <motion.button
+            whileTap={{ scale: 1.3 }}
+            onClick={handleLike}
+            className="p-0.5"
+            aria-label={liked ? "Unlike" : "Like"}
+            aria-pressed={liked}
+          >
+            <Heart className={`h-6 w-6 transition-all duration-200 ${liked ? "fill-red-500 text-red-500" : "text-gray-700 dark:text-gray-300 hover:text-gray-500"}`} />
+          </motion.button>
+          <button onClick={() => setShowComments((v) => !v)} className="p-0.5" aria-label="Comments" aria-expanded={showComments}>
+            <MessageCircle className="h-6 w-6 text-gray-700 dark:text-gray-300 hover:text-gray-500 transition-colors" />
+          </button>
+          <button onClick={handleShare} className="p-0.5" aria-label="Share">
+            <Send className="h-5 w-5 text-gray-700 dark:text-gray-300 hover:text-gray-500 transition-colors -rotate-45 -translate-y-0.5" />
+          </button>
+        </div>
+        <button onClick={() => setSaved(!saved)} className="ml-auto p-0.5" aria-label={saved ? "Unsave" : "Save"}>
+          <Bookmark className={`h-6 w-6 transition-all duration-200 ${saved ? "fill-gray-900 dark:fill-white text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300 hover:text-gray-500"}`} />
         </button>
       </div>
 
-      {/* Comments panel */}
-      {showComments && (
-        <CommentsPanel postId={post.postId} groupId={post.groupId} />
+      {/* Like count */}
+      <div className="px-4 pb-1">
+        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+          {formatNumber(post.likeCount + (liked ? 1 : 0))} likes
+        </p>
+      </div>
+
+      {/* Content */}
+      <div className="px-4 pb-2">
+        <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
+          <Link href={`/profile/${post.authorId}`} className="font-semibold text-gray-900 dark:text-white hover:underline mr-1.5">
+            {post.authorName}
+          </Link>
+          <span className="whitespace-pre-wrap">{displayContent}</span>
+          {isLong && !expanded && (
+            <button onClick={() => setExpanded(true)} className="text-gray-400 hover:text-gray-600 ml-1 text-sm">more</button>
+          )}
+        </p>
+      </div>
+
+      {/* Comment count link */}
+      {post.commentCount > 0 && !showComments && (
+        <button onClick={() => setShowComments(true)} className="px-4 pb-2 text-sm text-gray-400 hover:text-gray-600 transition-colors text-left">
+          View all {formatNumber(post.commentCount)} comments
+        </button>
       )}
+
+      {/* Comments */}
+      <AnimatePresence>
+        {showComments && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="px-4 pb-4 overflow-hidden">
+            <CommentsPanel postId={post.postId} groupId={post.groupId} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.article>
   );
 }

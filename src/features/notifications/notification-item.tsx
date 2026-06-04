@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Bell, Users, FileText, Video } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { timeAgo } from "@/utils/format";
@@ -20,16 +21,41 @@ const colorMap: Record<NotificationType, string> = {
   MEETING_STARTED: "bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400",
 };
 
+/** Maps notification type to a navigation path based on referenceId */
+function getNavigationPath(notification: NotificationDto): string | null {
+  const ref = notification.referenceId;
+  if (!ref) return null;
+
+  switch (notification.type) {
+    case "GROUP_CREATED":
+      return `/groups/${ref}`;
+    case "POST_CREATED":
+      return `/feed`; // Could navigate to specific post if we had a post detail page
+    case "MEETING_STARTED":
+      return `/meetings`;
+    case "USER_CREATED":
+      return `/profile/${ref}`;
+    default:
+      return null;
+  }
+}
+
 interface NotificationItemProps {
   notification: NotificationDto;
 }
 
 export function NotificationItem({ notification }: NotificationItemProps) {
   const markAsRead = useMarkAsRead();
+  const router = useRouter();
 
   const handleClick = () => {
     if (!notification.read) {
       markAsRead.mutate(notification.id);
+    }
+
+    const path = getNavigationPath(notification);
+    if (path) {
+      router.push(path);
     }
   };
 
@@ -37,7 +63,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
     <button
       onClick={handleClick}
       className={cn(
-        "w-full flex items-start gap-3 p-4 text-left hover:bg-gray-50 dark:hover:bg-surface-dark-3 transition-colors rounded-xl",
+        "w-full flex items-start gap-3 p-4 text-left hover:bg-gray-50 dark:hover:bg-surface-dark-3 transition-colors",
         !notification.read && "bg-brand-50/50 dark:bg-brand-950/20"
       )}
     >
@@ -53,7 +79,10 @@ export function NotificationItem({ notification }: NotificationItemProps) {
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+        <p className={cn(
+          "text-sm text-gray-900 dark:text-gray-100",
+          !notification.read ? "font-bold" : "font-medium"
+        )}>
           {notification.title}
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
@@ -66,7 +95,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
 
       {/* Unread dot */}
       {!notification.read && (
-        <div className="h-2 w-2 rounded-full bg-brand-500 flex-shrink-0 mt-1.5" />
+        <div className="h-2.5 w-2.5 rounded-full bg-brand-500 flex-shrink-0 mt-1.5 animate-pulse" />
       )}
     </button>
   );
