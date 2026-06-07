@@ -14,6 +14,7 @@ import { useCreatePost } from "@/hooks/use-posts";
 import { useCurrentUser } from "@/hooks/use-user";
 import { mediaService } from "@/services/media.service";
 import { useUIStore } from "@/store/ui-store";
+import { useGroupContextStore } from "@/store/group-context-store";
 import { formatFileSize } from "@/utils/format";
 import toast from "react-hot-toast";
 
@@ -25,7 +26,8 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export function CreatePostModal() {
-  const { isCreatePostOpen, closeCreatePost, activeGroupId } = useUIStore();
+  const { isCreatePostOpen, closeCreatePost } = useUIStore();
+  const activeGroupId = useGroupContextStore((s) => s.activeGroupId);
   const { data: currentUser } = useCurrentUser();
   const createPost = useCreatePost();
 

@@ -15,9 +15,10 @@ import toast from "react-hot-toast";
 
 interface PostCardProps {
   post: PostDto;
+  index?: number;
 }
 
-export function PostCard({ post }: PostCardProps) {
+export function PostCard({ post, index = 0 }: PostCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -63,15 +64,16 @@ export function PostCard({ post }: PostCardProps) {
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="card overflow-hidden"
+      transition={{ duration: 0.4, delay: index * 0.05, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: -2 }}
+      className="card overflow-hidden group/card"
       role="article"
       aria-label={`Post by ${post.authorName}`}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-4 pb-2">
+      <div className="flex items-center gap-3 px-5 pt-5 pb-2">
         <Link href={`/profile/${post.authorId}`}>
           <Avatar name={post.authorName} size="md" />
         </Link>
@@ -81,14 +83,19 @@ export function PostCard({ post }: PostCardProps) {
           </Link>
           <time className="text-xs text-gray-400" dateTime={post.createdAt}>{timeAgo(post.createdAt)}</time>
         </div>
-        <button className="btn-ghost p-1.5 rounded-lg" aria-label="More options">
-          <MoreHorizontal className="h-4 w-4" />
-        </button>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/[0.04] transition-colors opacity-0 group-hover/card:opacity-100"
+          aria-label="More options"
+        >
+          <MoreHorizontal className="h-4 w-4 text-gray-400" />
+        </motion.button>
       </div>
 
       {/* Media — full width, double-tap to like */}
       {post.mediaUrl && (
-        <div className="relative" onClick={handleDoubleTap}>
+        <div className="relative mt-2" onClick={handleDoubleTap}>
           <button
             onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
             className="w-full cursor-zoom-in focus:outline-none"
@@ -96,17 +103,17 @@ export function PostCard({ post }: PostCardProps) {
           >
             <MediaImage src={post.mediaUrl} alt={`Media from ${post.authorName}`} className="rounded-none" />
           </button>
-          {/* Double-tap heart animation */}
+          {/* Double-tap heart animation with particles */}
           <AnimatePresence>
             {showHeart && (
               <motion.div
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 1.5, opacity: 0 }}
-                transition={{ duration: 0.4 }}
+                exit={{ scale: 1.8, opacity: 0 }}
+                transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
                 className="absolute inset-0 flex items-center justify-center pointer-events-none"
               >
-                <Heart className="h-20 w-20 text-white fill-white drop-shadow-2xl" />
+                <Heart className="h-24 w-24 text-white fill-white drop-shadow-2xl" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -117,39 +124,61 @@ export function PostCard({ post }: PostCardProps) {
         <Lightbox src={post.mediaUrl} alt={`Media from ${post.authorName}`} open={lightboxOpen} onClose={() => setLightboxOpen(false)} />
       )}
 
-      {/* Actions row — Instagram style */}
-      <div className="flex items-center px-4 pt-3 pb-1" role="group" aria-label="Post actions">
-        <div className="flex items-center gap-3">
+      {/* Actions row */}
+      <div className="flex items-center px-5 pt-3 pb-1" role="group" aria-label="Post actions">
+        <div className="flex items-center gap-1">
+          {/* Like button with heart burst */}
           <motion.button
-            whileTap={{ scale: 1.3 }}
+            whileTap={{ scale: 1.4 }}
+            animate={liked ? { scale: [1, 1.3, 0.9, 1] } : {}}
+            transition={{ duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
             onClick={handleLike}
-            className="p-0.5"
+            className="p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
             aria-label={liked ? "Unlike" : "Like"}
             aria-pressed={liked}
           >
-            <Heart className={`h-6 w-6 transition-all duration-200 ${liked ? "fill-red-500 text-red-500" : "text-gray-700 dark:text-gray-300 hover:text-gray-500"}`} />
+            <Heart className={`h-6 w-6 transition-all duration-300 ${liked ? "fill-red-500 text-red-500 drop-shadow-sm" : "text-gray-600 dark:text-gray-400"}`} />
           </motion.button>
-          <button onClick={() => setShowComments((v) => !v)} className="p-0.5" aria-label="Comments" aria-expanded={showComments}>
-            <MessageCircle className="h-6 w-6 text-gray-700 dark:text-gray-300 hover:text-gray-500 transition-colors" />
-          </button>
-          <button onClick={handleShare} className="p-0.5" aria-label="Share">
-            <Send className="h-5 w-5 text-gray-700 dark:text-gray-300 hover:text-gray-500 transition-colors -rotate-45 -translate-y-0.5" />
-          </button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowComments((v) => !v)}
+            className="p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors"
+            aria-label="Comments"
+            aria-expanded={showComments}
+          >
+            <MessageCircle className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleShare}
+            className="p-2 rounded-xl hover:bg-green-50 dark:hover:bg-green-950/20 transition-colors"
+            aria-label="Share"
+          >
+            <Send className="h-5 w-5 text-gray-600 dark:text-gray-400 -rotate-45 -translate-y-0.5" />
+          </motion.button>
         </div>
-        <button onClick={() => setSaved(!saved)} className="ml-auto p-0.5" aria-label={saved ? "Unsave" : "Save"}>
-          <Bookmark className={`h-6 w-6 transition-all duration-200 ${saved ? "fill-gray-900 dark:fill-white text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300 hover:text-gray-500"}`} />
-        </button>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setSaved(!saved)}
+          className="ml-auto p-2 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors"
+          aria-label={saved ? "Unsave" : "Save"}
+        >
+          <Bookmark className={`h-6 w-6 transition-all duration-300 ${saved ? "fill-gray-900 dark:fill-white text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400"}`} />
+        </motion.button>
       </div>
 
       {/* Like count */}
-      <div className="px-4 pb-1">
+      <div className="px-5 pb-1">
         <p className="text-sm font-semibold text-gray-900 dark:text-white">
           {formatNumber(post.likeCount + (liked ? 1 : 0))} likes
         </p>
       </div>
 
       {/* Content */}
-      <div className="px-4 pb-2">
+      <div className="px-5 pb-3">
         <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
           <Link href={`/profile/${post.authorId}`} className="font-semibold text-gray-900 dark:text-white hover:underline mr-1.5">
             {post.authorName}
@@ -163,7 +192,7 @@ export function PostCard({ post }: PostCardProps) {
 
       {/* Comment count link */}
       {post.commentCount > 0 && !showComments && (
-        <button onClick={() => setShowComments(true)} className="px-4 pb-2 text-sm text-gray-400 hover:text-gray-600 transition-colors text-left">
+        <button onClick={() => setShowComments(true)} className="px-5 pb-3 text-sm text-gray-400 hover:text-gray-600 transition-colors text-left">
           View all {formatNumber(post.commentCount)} comments
         </button>
       )}
@@ -171,7 +200,13 @@ export function PostCard({ post }: PostCardProps) {
       {/* Comments */}
       <AnimatePresence>
         {showComments && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="px-4 pb-4 overflow-hidden">
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="px-5 pb-5 overflow-hidden"
+          >
             <CommentsPanel postId={post.postId} groupId={post.groupId} />
           </motion.div>
         )}

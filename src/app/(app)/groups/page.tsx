@@ -6,14 +6,18 @@ import { GroupCard } from "@/features/groups/group-card";
 import { GroupCardSkeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
-import { useMyGroups } from "@/hooks/use-groups";
+import { useMyGroups, useUserMemberships } from "@/hooks/use-groups";
 import { useUIStore } from "@/store/ui-store";
 import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function GroupsPage() {
   usePageTitle("Groups");
-  const { data: groups, isLoading } = useMyGroups();
+  const { data: memberships, isLoading } = useUserMemberships();
+  const { data: ownedGroups } = useMyGroups();
   const openCreateGroup = useUIStore((s) => s.openCreateGroup);
+
+  const hasOwnedGroup = (ownedGroups?.length ?? 0) > 0;
+  const groups = memberships?.map((m) => m.group) ?? [];
 
   return (
     <>
@@ -25,13 +29,15 @@ export default function GroupsPage() {
               Your Groups
             </h1>
             <p className="text-gray-500 text-sm mt-0.5">
-              {groups?.length ?? 0} groups
+              {groups.length} groups
             </p>
           </div>
-          <Button onClick={openCreateGroup}>
-            <Plus className="h-4 w-4" />
-            New Group
-          </Button>
+          {!hasOwnedGroup && (
+            <Button onClick={openCreateGroup}>
+              <Plus className="h-4 w-4" />
+              New Group
+            </Button>
+          )}
         </div>
 
         {isLoading ? (
@@ -40,7 +46,7 @@ export default function GroupsPage() {
               <GroupCardSkeleton key={i} />
             ))}
           </div>
-        ) : groups?.length === 0 ? (
+        ) : groups.length === 0 ? (
           <EmptyState
             emoji="🐝"
             title="No groups yet"
@@ -50,7 +56,7 @@ export default function GroupsPage() {
           />
         ) : (
           <div className="space-y-3">
-            {groups?.map((group) => (
+            {groups.map((group) => (
               <GroupCard key={group.groupId} group={group} />
             ))}
           </div>

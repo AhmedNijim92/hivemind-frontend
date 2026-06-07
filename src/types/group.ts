@@ -29,3 +29,25 @@ export interface GroupMember {
 export interface ApiResponse {
   message: string;
 }
+
+// ─── User Group Membership ────────────────────────────────────────────────────
+
+export interface UserGroupDto {
+  groupId: string;
+  role: MemberRole;
+  joinedAt: string;
+  group: GroupDto;
+}
+
+// ─── Group Follow ─────────────────────────────────────────────────────────────
+
+export interface GroupFollowDto {
+  groupId: string;
+  followedGroupId: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface GroupFollowRequest {
+  targetGroupId: string;
+}

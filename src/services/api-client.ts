@@ -76,6 +76,12 @@ apiClient.interceptors.request.use(
       config.data = sanitizePayload(config.data);
     }
 
+    // When sending FormData (file uploads), remove Content-Type header
+    // so Axios/browser can set multipart/form-data with the correct boundary
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

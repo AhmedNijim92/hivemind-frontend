@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { AuthGuard } from "@/components/auth-guard";
+import { GroupContextGuard } from "@/components/group-context-guard";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
@@ -28,19 +29,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthGuard>
-      <div className="flex min-h-screen">
-        <Sidebar />
-        <main className="flex-1 min-w-0 pb-20 lg:pb-0">
-          <ErrorBoundary>
-            {children}
-          </ErrorBoundary>
-        </main>
-      </div>
-      <MobileNav />
-      <CreatePostModal />
-      <CreateGroupModal />
-      <SearchDialog open={isSearchOpen} onClose={closeSearch} />
-      <ScrollToTop />
+      <GroupContextGuard>
+        <div className="flex min-h-screen">
+          <Sidebar />
+          <main className="flex-1 min-w-0 pb-20 lg:pb-0">
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </main>
+        </div>
+        <MobileNav />
+        <CreatePostModal />
+        <CreateGroupModal />
+        <SearchDialog open={isSearchOpen} onClose={closeSearch} />
+        <ScrollToTop />
+      </GroupContextGuard>
     </AuthGuard>
   );
 }

@@ -11,6 +11,7 @@ import type { MeetingDto } from "@/types";
 
 interface MeetingCardProps {
   meeting: MeetingDto;
+  index?: number;
 }
 
 const statusVariant = {
@@ -19,7 +20,7 @@ const statusVariant = {
   ENDED: "default",
 } as const;
 
-export function MeetingCard({ meeting }: MeetingCardProps) {
+export function MeetingCard({ meeting, index = 0 }: MeetingCardProps) {
   const userId = useAuthStore((s) => s.userId);
   const startMeeting = useStartMeeting();
   const joinMeeting = useJoinMeeting();
@@ -31,37 +32,43 @@ export function MeetingCard({ meeting }: MeetingCardProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      className="card p-4 space-y-3"
+      transition={{ duration: 0.4, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: -2 }}
+      className="card-hover p-5 space-y-3"
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2.5">
-          <div
-            className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+        <div className="flex items-center gap-3">
+          <motion.div
+            animate={isActive ? { scale: [1, 1.05, 1] } : {}}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className={`h-11 w-11 rounded-xl flex items-center justify-center shadow-sm ${
               isActive
-                ? "bg-green-100 dark:bg-green-950 text-green-600"
-                : "bg-gray-100 dark:bg-gray-800 text-gray-500"
+                ? "bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-emerald-500/25"
+                : "bg-gray-100 dark:bg-surface-dark-3 text-gray-500"
             }`}
           >
             <Video className="h-5 w-5" />
-          </div>
+          </motion.div>
           <div>
             <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">
               {meeting.title}
             </h3>
-            <Badge variant={statusVariant[meeting.status]} className="mt-0.5">
-              {isActive && <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />}
-              {meeting.status}
-            </Badge>
+            <div className="flex items-center gap-2 mt-0.5">
+              <Badge variant={statusVariant[meeting.status]}>
+                {isActive && <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />}
+                {meeting.status}
+              </Badge>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Description */}
       {meeting.description && (
-        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
           {meeting.description}
         </p>
       )}
@@ -69,24 +76,24 @@ export function MeetingCard({ meeting }: MeetingCardProps) {
       {/* Meta */}
       <div className="flex items-center gap-4 text-xs text-gray-400">
         <span className="flex items-center gap-1">
-          <Users className="h-3 w-3" />
-          {meeting.participantCount} participants
+          <Users className="h-3.5 w-3.5" />
+          <span className="font-medium">{meeting.participantCount}</span> joined
         </span>
         {meeting.scheduledAt && (
           <span className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />
+            <Clock className="h-3.5 w-3.5" />
             {formatDate(meeting.scheduledAt, "MMM d, h:mm a")}
           </span>
         )}
-        {meeting.startedAt && (
-          <span className="flex items-center gap-1">
-            <Play className="h-3 w-3" />
-            Started {timeAgo(meeting.startedAt)}
+        {meeting.startedAt && isActive && (
+          <span className="flex items-center gap-1 text-emerald-500">
+            <Play className="h-3.5 w-3.5" />
+            Live · {timeAgo(meeting.startedAt)}
           </span>
         )}
         {meeting.endedAt && (
           <span className="flex items-center gap-1">
-            <CheckCircle className="h-3 w-3" />
+            <CheckCircle className="h-3.5 w-3.5" />
             Ended {timeAgo(meeting.endedAt)}
           </span>
         )}
@@ -94,10 +101,11 @@ export function MeetingCard({ meeting }: MeetingCardProps) {
 
       {/* Actions */}
       {!isEnded && (
-        <div className="flex gap-2 pt-1">
+        <div className="flex gap-2 pt-2">
           {isHost && isScheduled && (
             <Button
               size="sm"
+              variant="gradient"
               onClick={() =>
                 startMeeting.mutate({
                   groupId: meeting.groupId,

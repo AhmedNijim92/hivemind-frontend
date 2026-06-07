@@ -1,6 +1,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Modal } from "@/components/ui/modal";
@@ -9,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useCreateGroup } from "@/hooks/use-groups";
 import { useUIStore } from "@/store/ui-store";
+import { useGroupContextStore } from "@/store/group-context-store";
 
 const schema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(80),
@@ -18,7 +20,9 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export function CreateGroupModal() {
+  const router = useRouter();
   const { isCreateGroupOpen, closeCreateGroup } = useUIStore();
+  const setActiveGroup = useGroupContextStore((s) => s.setActiveGroup);
   const createGroup = useCreateGroup();
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
@@ -27,9 +31,12 @@ export function CreateGroupModal() {
   });
 
   const onSubmit = async (data: FormData) => {
-    await createGroup.mutateAsync(data);
+    const newGroup = await createGroup.mutateAsync(data);
+    // Set the newly created group as the active context
+    setActiveGroup(newGroup);
     reset();
     closeCreateGroup();
+    router.push("/feed");
   };
 
   return (

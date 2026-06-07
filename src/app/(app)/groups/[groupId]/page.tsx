@@ -23,6 +23,7 @@ import { useGroupMeetings } from "@/hooks/use-meetings";
 import { useOpenGroupChat } from "@/hooks/use-chat";
 import { useGroupFollow, useJoinRequest, usePendingRequests } from "@/hooks/use-group-social";
 import { useUIStore } from "@/store/ui-store";
+import { useGroupContextStore } from "@/store/group-context-store";
 import { useAuthStore } from "@/store/auth-store";
 import { formatNumber, timeAgo } from "@/utils/format";
 import { usePageTitle } from "@/hooks/use-page-title";
@@ -44,7 +45,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ groupId:
   const { data: members } = useGroupMembers(groupId);
   const joinGroup = useJoinGroup();
   const leaveGroup = useLeaveGroup();
-  const { openCreatePost, setActiveGroupId } = useUIStore();
+  const { openCreatePost } = useUIStore();
   const userId = useAuthStore((s) => s.userId);
   const openGroupChat = useOpenGroupChat();
 
@@ -60,7 +61,12 @@ export default function GroupDetailPage({ params }: { params: Promise<{ groupId:
 
   usePageTitle(group?.name ?? "Group");
 
-  const handleCreatePost = () => { setActiveGroupId(groupId); openCreatePost(); };
+  const handleCreatePost = () => {
+    if (group) {
+      useGroupContextStore.getState().setActiveGroup(group);
+    }
+    openCreatePost();
+  };
   const handleOpenChat = () => {
     if (!group || !members) return;
     const ids = members.map((m) => m.userId);

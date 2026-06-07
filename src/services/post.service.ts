@@ -14,6 +14,15 @@ export const postService = {
     return res.data;
   },
 
+  /** Get posts from multiple groups for aggregated feed */
+  getFeedByGroups: async (groupIds: string[]): Promise<PostDto[]> => {
+    const params = groupIds.map((id) => `groupIds=${id}`).join("&");
+    const res = await apiClient.get<PostDto[]>(
+      `/api/v1/posts/feed?${params}`
+    );
+    return res.data;
+  },
+
   getPost: async (groupId: string, postId: string): Promise<PostDto> => {
     const res = await apiClient.get<PostDto>(
       `/api/v1/posts/${groupId}/${postId}`

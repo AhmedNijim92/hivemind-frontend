@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Bell, Users, FileText, Video } from "lucide-react";
+import { motion } from "framer-motion";
 import { cn } from "@/utils/cn";
 import { timeAgo } from "@/utils/format";
 import { useMarkAsRead } from "@/hooks/use-notifications";
@@ -15,36 +16,30 @@ const iconMap: Record<NotificationType, React.ReactNode> = {
 };
 
 const colorMap: Record<NotificationType, string> = {
-  USER_CREATED: "bg-brand-100 dark:bg-brand-950 text-brand-600 dark:text-brand-400",
-  GROUP_CREATED: "bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400",
-  POST_CREATED: "bg-green-100 dark:bg-green-950 text-green-600 dark:text-green-400",
-  MEETING_STARTED: "bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400",
+  USER_CREATED: "bg-gradient-to-br from-brand-100 to-brand-50 dark:from-brand-950/60 dark:to-brand-950/30 text-brand-600 dark:text-brand-400",
+  GROUP_CREATED: "bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-950/60 dark:to-blue-950/30 text-blue-600 dark:text-blue-400",
+  POST_CREATED: "bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-950/60 dark:to-emerald-950/30 text-emerald-600 dark:text-emerald-400",
+  MEETING_STARTED: "bg-gradient-to-br from-orange-100 to-orange-50 dark:from-orange-950/60 dark:to-orange-950/30 text-orange-600 dark:text-orange-400",
 };
 
-/** Maps notification type to a navigation path based on referenceId */
 function getNavigationPath(notification: NotificationDto): string | null {
   const ref = notification.referenceId;
   if (!ref) return null;
-
   switch (notification.type) {
-    case "GROUP_CREATED":
-      return `/groups/${ref}`;
-    case "POST_CREATED":
-      return `/feed`; // Could navigate to specific post if we had a post detail page
-    case "MEETING_STARTED":
-      return `/meetings`;
-    case "USER_CREATED":
-      return `/profile/${ref}`;
-    default:
-      return null;
+    case "GROUP_CREATED": return `/groups/${ref}`;
+    case "POST_CREATED": return `/feed`;
+    case "MEETING_STARTED": return `/meetings`;
+    case "USER_CREATED": return `/profile/${ref}`;
+    default: return null;
   }
 }
 
 interface NotificationItemProps {
   notification: NotificationDto;
+  index?: number;
 }
 
-export function NotificationItem({ notification }: NotificationItemProps) {
+export function NotificationItem({ notification, index = 0 }: NotificationItemProps) {
   const markAsRead = useMarkAsRead();
   const router = useRouter();
 
@@ -52,30 +47,33 @@ export function NotificationItem({ notification }: NotificationItemProps) {
     if (!notification.read) {
       markAsRead.mutate(notification.id);
     }
-
     const path = getNavigationPath(notification);
-    if (path) {
-      router.push(path);
-    }
+    if (path) router.push(path);
   };
 
   return (
-    <button
+    <motion.button
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.04, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ x: 4, backgroundColor: "rgba(168, 85, 247, 0.03)" }}
+      whileTap={{ scale: 0.99 }}
       onClick={handleClick}
       className={cn(
-        "w-full flex items-start gap-3 p-4 text-left hover:bg-gray-50 dark:hover:bg-surface-dark-3 transition-colors",
-        !notification.read && "bg-brand-50/50 dark:bg-brand-950/20"
+        "w-full flex items-start gap-3 p-4 text-left rounded-xl transition-all duration-200",
+        !notification.read && "bg-brand-50/30 dark:bg-brand-950/10"
       )}
     >
       {/* Icon */}
-      <div
+      <motion.div
+        whileHover={{ scale: 1.1, rotate: 5 }}
         className={cn(
-          "h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0",
+          "h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm",
           colorMap[notification.type]
         )}
       >
         {iconMap[notification.type]}
-      </div>
+      </motion.div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
@@ -85,18 +83,22 @@ export function NotificationItem({ notification }: NotificationItemProps) {
         )}>
           {notification.title}
         </p>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">
           {notification.message}
         </p>
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="text-xs text-gray-400 mt-1.5 font-medium">
           {timeAgo(notification.createdAt)}
         </p>
       </div>
 
-      {/* Unread dot */}
+      {/* Unread dot with glow */}
       {!notification.read && (
-        <div className="h-2.5 w-2.5 rounded-full bg-brand-500 flex-shrink-0 mt-1.5 animate-pulse" />
+        <motion.div
+          animate={{ scale: [1, 1.2, 1] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="h-2.5 w-2.5 rounded-full bg-brand-500 flex-shrink-0 mt-2 shadow-sm shadow-brand-500/50"
+        />
       )}
-    </button>
+    </motion.button>
   );
 }

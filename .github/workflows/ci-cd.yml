@@ -33,12 +33,15 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:8080
+          NEXT_PUBLIC_API_URL: ""
 
   docker:
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
@@ -54,7 +57,7 @@ jobs:
           context: .
           push: true
           build-args: |
-            NEXT_PUBLIC_API_URL=http://localhost:8080
+            NEXT_PUBLIC_API_URL=
           tags: |
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.IMAGE_NAME }}:latest
