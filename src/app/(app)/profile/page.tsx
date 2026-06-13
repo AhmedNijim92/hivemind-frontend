@@ -65,8 +65,7 @@ export default function ProfilePage() {
     setUploadingAvatar(true);
     try {
       const uploaded = await mediaService.upload(file, userId ?? undefined, "USER_AVATAR");
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-      await updateProfile.mutateAsync({ profilePictureUrl: `${apiBase}/api/v1/media/${uploaded.mediaId}/download` });
+      await updateProfile.mutateAsync({ profilePictureUrl: `/api/v1/media/${uploaded.mediaId}/download` });
       toast.success("Updated!");
     } catch { toast.error("Upload failed"); }
     setUploadingAvatar(false);

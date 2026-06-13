@@ -77,8 +77,7 @@ export function CreatePostModal() {
       setUploading(true);
       try {
         const uploaded = await mediaService.upload(mediaFile, undefined, "POST");
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-        mediaUrl = `${apiBase}/api/v1/media/${uploaded.mediaId}/download`;
+        mediaUrl = `/api/v1/media/${uploaded.mediaId}/download`;
       } catch {
         toast.error("Media upload failed — posting without image");
       }

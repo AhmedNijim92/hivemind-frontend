@@ -86,8 +86,7 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
       setUploading(true);
       try {
         const uploaded = await mediaService.upload(imageFile, undefined, "POST");
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-        imageUrl = `${apiBase}/api/v1/media/${uploaded.mediaId}/download`;
+        imageUrl = `/api/v1/media/${uploaded.mediaId}/download`;
       } catch {
         toast.error("Image upload failed");
       }

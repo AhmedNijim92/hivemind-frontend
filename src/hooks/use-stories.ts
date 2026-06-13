@@ -51,9 +51,7 @@ export function useCreateStory() {
       try {
         // Upload image via media service
         const uploaded = await mediaService.upload(file, undefined, "POST");
-        const apiBase =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-        const mediaUrl = `${apiBase}/api/v1/media/${uploaded.mediaId}/download`;
+        const mediaUrl = `/api/v1/media/${uploaded.mediaId}/download`;
 
         const now = new Date();
         const story: Story = {
