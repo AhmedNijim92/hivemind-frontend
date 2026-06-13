@@ -13,8 +13,9 @@ import axios, {
 } from "axios";
 import { useAuthStore } from "@/store/auth-store";
 import { stripHtml } from "@/utils/sanitize";
+import { getApiBaseUrl } from "./runtime-config";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+const BASE_URL = getApiBaseUrl();
 
 /**
  * Custom error class that extends Error so unhandled rejections

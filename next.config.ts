@@ -10,6 +10,8 @@ const securityHeaders = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
 ];
 
+const apiGatewayUrl = process.env.API_GATEWAY_INTERNAL_URL || "http://api-gateway:8080";
+
 const nextConfig: NextConfig = {
   output: "standalone",
   images: {
@@ -29,6 +31,18 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: securityHeaders,
+      },
+    ];
+  },
+  // Proxy /api/v1/* to the API gateway (server-side, within the cluster).
+  // This allows NEXT_PUBLIC_API_URL to be empty (relative) so that
+  // browser requests go to the same origin, then Next.js proxies them
+  // to the gateway internally. Configurable via API_GATEWAY_INTERNAL_URL env var.
+  async rewrites() {
+    return [
+      {
+        source: "/api/v1/:path*",
+        destination: `${apiGatewayUrl}/api/v1/:path*`,
       },
     ];
   },
