@@ -38,13 +38,18 @@ const nextConfig: NextConfig = {
   // This allows NEXT_PUBLIC_API_URL to be empty (relative) so that
   // browser requests go to the same origin, then Next.js proxies them
   // to the gateway internally. Configurable via API_GATEWAY_INTERNAL_URL env var.
+  // Uses beforeFiles so the rewrite fires before Next.js checks for matching routes.
   async rewrites() {
-    return [
-      {
-        source: "/api/v1/:path*",
-        destination: `${apiGatewayUrl}/api/v1/:path*`,
-      },
-    ];
+    return {
+      beforeFiles: [
+        {
+          source: "/api/v1/:path*",
+          destination: `${apiGatewayUrl}/api/v1/:path*`,
+        },
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
   },
   // Prevent source maps in production
   productionBrowserSourceMaps: false,
