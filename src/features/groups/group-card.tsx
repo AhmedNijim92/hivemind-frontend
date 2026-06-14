@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Users, Lock, Globe } from "lucide-react";
+import Image from "next/image";
+import { Users, Lock, Globe, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
-import { Badge } from "@/components/ui/badge";
 import { formatNumber, timeAgo } from "@/utils/format";
 import type { GroupDto } from "@/types";
 
@@ -13,65 +13,70 @@ interface GroupCardProps {
   index?: number;
 }
 
+const gradients = [
+  "from-brand-400 to-brand-600",
+  "from-pink-400 to-rose-600",
+  "from-indigo-400 to-purple-600",
+  "from-emerald-400 to-teal-600",
+  "from-orange-400 to-red-500",
+  "from-cyan-400 to-blue-600",
+];
+
 export function GroupCard({ group, onClick, index = 0 }: GroupCardProps) {
-  const initials = group.name
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase();
+  const gradient = gradients[group.name.charCodeAt(0) % gradients.length];
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={{ y: -4, scale: 1.01 }}
-      whileTap={{ scale: 0.98 }}
+      transition={{ duration: 0.35, delay: index * 0.04, ease: [0.16, 1, 0.3, 1] }}
     >
       <Link
         href={`/groups/${group.groupId}`}
         onClick={onClick}
-        className="card-hover p-5 flex items-start gap-4 block group/card"
+        className="flex items-center gap-4 p-4 rounded-2xl bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.04] hover:border-brand-200 dark:hover:border-brand-500/20 hover:shadow-md hover:shadow-brand-500/5 transition-all duration-200 group/card"
       >
-        {/* Group avatar with gradient + hover glow */}
-        <motion.div
-          whileHover={{ rotate: [0, -3, 3, 0] }}
-          transition={{ duration: 0.4 }}
-          className="h-13 w-13 rounded-2xl bg-gradient-to-br from-brand-400 via-pink-500 to-indigo-500 flex items-center justify-center flex-shrink-0 shadow-md shadow-brand-500/20 group-hover/card:shadow-lg group-hover/card:shadow-brand-500/30 transition-shadow"
-        >
-          <span className="text-white font-bold text-sm">{initials}</span>
-        </motion.div>
+        {/* Group avatar */}
+        <div className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0 shadow-sm group-hover/card:shadow-md group-hover/card:scale-105 transition-all duration-200 overflow-hidden relative`}>
+          {group.profilePictureUrl ? (
+            <Image src={group.profilePictureUrl} alt={group.name} fill className="object-cover" />
+          ) : (
+            <span className="text-white font-bold text-lg">{group.name[0].toUpperCase()}</span>
+          )}
+        </div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm truncate group-hover/card:text-brand-600 dark:group-hover/card:text-brand-400 transition-colors">
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-[15px] truncate group-hover/card:text-brand-600 dark:group-hover/card:text-brand-400 transition-colors">
               {group.name}
             </h3>
-            <Badge variant={group.privacy === "PUBLIC" ? "default" : "brand"}>
-              {group.privacy === "PUBLIC" ? (
-                <Globe className="h-3 w-3" />
-              ) : (
-                <Lock className="h-3 w-3" />
-              )}
-              {group.privacy}
-            </Badge>
+            <span className={`inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md font-medium ${
+              group.privacy === "PUBLIC"
+                ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                : "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400"
+            }`}>
+              {group.privacy === "PUBLIC" ? <Globe className="h-2.5 w-2.5" /> : <Lock className="h-2.5 w-2.5" />}
+              {group.privacy === "PUBLIC" ? "Open" : "Private"}
+            </span>
           </div>
 
           {group.description && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 leading-relaxed">
-              {group.description}
-            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">{group.description}</p>
           )}
 
-          <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-400">
-            <Users className="h-3 w-3" />
-            <span className="font-medium">{formatNumber(group.memberCount)} members</span>
-            <span className="mx-1 text-gray-300 dark:text-gray-600">·</span>
-            <span>{timeAgo(group.createdAt)}</span>
+          <div className="flex items-center gap-3 mt-1.5">
+            <span className="flex items-center gap-1 text-[11px] text-gray-400">
+              <Users className="h-3 w-3" /> {formatNumber(group.memberCount)} members
+            </span>
+            <span className="text-[11px] text-gray-300 dark:text-gray-600">
+              {timeAgo(group.createdAt)}
+            </span>
           </div>
         </div>
+
+        {/* Arrow */}
+        <ChevronRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover/card:text-brand-400 group-hover/card:translate-x-0.5 transition-all flex-shrink-0" />
       </Link>
     </motion.div>
   );
