@@ -22,6 +22,11 @@ export const groupService = {
     return res.data;
   },
 
+  searchGroups: async (query: string): Promise<GroupDto[]> => {
+    const res = await apiClient.get<GroupDto[]>(`/api/v1/groups/search?q=${encodeURIComponent(query)}`);
+    return res.data;
+  },
+
   /** Get all groups where user has an approved membership */
   getUserMemberships: async (): Promise<UserGroupDto[]> => {
     const res = await apiClient.get<UserGroupDto[]>("/api/v1/groups/memberships");

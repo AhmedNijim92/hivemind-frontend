@@ -10,6 +10,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useComments, useAddComment } from "@/hooks/use-posts";
 import { useCurrentUser } from "@/hooks/use-user";
+import { useAuthStore } from "@/store/auth-store";
 import { timeAgo } from "@/utils/format";
 import Link from "next/link";
 
@@ -27,6 +28,7 @@ export function CommentsPanel({ postId, groupId }: CommentsPanelProps) {
   const { data: comments, isLoading } = useComments(postId);
   const addComment = useAddComment();
   const { data: currentUser } = useCurrentUser();
+  const userId = useAuthStore((s) => s.userId);
   const [likedComments, setLikedComments] = useState<Set<string>>(new Set());
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
@@ -69,6 +71,9 @@ export function CommentsPanel({ postId, groupId }: CommentsPanelProps) {
           <AnimatePresence>
             {comments?.map((c) => {
               const isLiked = likedComments.has(c.commentId);
+              const displayName = c.authorName === "Unknown" && c.authorId === userId && currentUser?.name
+                ? currentUser.name
+                : c.authorName === "Unknown" ? "Member" : c.authorName;
               return (
                 <motion.div
                   key={c.commentId}
@@ -77,12 +82,12 @@ export function CommentsPanel({ postId, groupId }: CommentsPanelProps) {
                   className="flex gap-2.5 group"
                 >
                   <Link href={`/profile/${c.authorId}`} className="flex-shrink-0 mt-0.5">
-                    <Avatar name={c.authorName} size="xs" />
+                    <Avatar name={displayName !== "Member" ? displayName : undefined} size="xs" />
                   </Link>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm">
                       <Link href={`/profile/${c.authorId}`} className="font-semibold text-gray-900 dark:text-gray-100 hover:underline mr-1.5">
-                        {c.authorName}
+                        {displayName}
                       </Link>
                       <span className="text-gray-700 dark:text-gray-300">{c.content}</span>
                     </p>

@@ -9,24 +9,16 @@ export const searchKeys = {
 };
 
 /**
- * Search groups by filtering the user's groups client-side.
- * (Backend doesn't have a search endpoint, so we filter locally.)
+ * Search all public groups via backend search endpoint.
  */
 export function useSearchGroups(query: string) {
   return useQuery({
     queryKey: searchKeys.groups(query),
     queryFn: async (): Promise<GroupDto[]> => {
-      const groups = await groupService.getMyGroups();
-      if (!query.trim()) return groups;
-      const q = query.toLowerCase();
-      return groups.filter(
-        (g) =>
-          g.name.toLowerCase().includes(q) ||
-          g.description?.toLowerCase().includes(q)
-      );
+      return groupService.searchGroups(query);
     },
-    enabled: query.length > 0,
-    staleTime: 1000 * 30,
+    enabled: query.trim().length >= 1,
+    staleTime: 1000 * 15,
   });
 }
 
@@ -43,7 +35,6 @@ export function useSearchUsers(query: string, userId: string) {
         userService.getFollowers(userId),
         userService.getFollowing(userId),
       ]);
-      // Merge and deduplicate
       const map = new Map<string, UserProfileDto>();
       [...followers, ...following].forEach((u) => map.set(u.userId, u));
       const all = Array.from(map.values());
