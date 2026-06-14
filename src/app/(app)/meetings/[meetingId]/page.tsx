@@ -5,11 +5,10 @@ import { useRouter } from "next/navigation";
 import {
   Mic, MicOff, Video, VideoOff, PhoneOff, Users,
   Hand, ArrowLeft, Lock, Globe, Copy, Send,
-  MessageCircle, Crown, ScreenShare, ScreenShareOff,
-  Sparkles, Maximize2,
+  MessageCircle, Crown, Heart, Flame, ThumbsUp, Laugh,
+  Sparkles, Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { useAuthStore } from "@/store/auth-store";
 import { useCurrentUser } from "@/hooks/use-user";
@@ -25,6 +24,21 @@ interface ChatMessage {
   time: string;
 }
 
+interface FloatingReaction {
+  id: string;
+  emoji: string;
+  x: number;
+}
+
+const REACTIONS = [
+  { emoji: "❤️", icon: Heart, color: "text-red-400" },
+  { emoji: "🔥", icon: Flame, color: "text-orange-400" },
+  { emoji: "👍", icon: ThumbsUp, color: "text-blue-400" },
+  { emoji: "😂", icon: Laugh, color: "text-yellow-400" },
+  { emoji: "✨", icon: Sparkles, color: "text-purple-400" },
+  { emoji: "⚡", icon: Zap, color: "text-cyan-400" },
+];
+
 export default function MeetingRoomPage({ params }: { params: Promise<{ meetingId: string }> }) {
   const { meetingId } = use(params);
   const router = useRouter();
@@ -38,115 +52,111 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Media state
+  // Media
   const [micOn, setMicOn] = useState(false);
   const [videoOn, setVideoOn] = useState(false);
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [handRaised, setHandRaised] = useState(false);
+
+  // UI
   const [showChat, setShowChat] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
+  const [showReactions, setShowReactions] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
-  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
 
   const { data: participants } = useMeetingParticipants(meetingId);
-
   usePageTitle(meetingData?.title ?? "Live Room");
 
-  // Load meeting
+  // ─── Load meeting ────────────────────────────────────────────────────────────
   useEffect(() => {
-    async function findMeeting() {
-      try {
-        const stored = sessionStorage.getItem(`meeting-${meetingId}`);
-        if (stored) {
-          const { groupId: gId } = JSON.parse(stored);
-          setGroupId(gId);
-          const meeting = await meetingService.getMeeting(gId, meetingId);
-          setMeetingData(meeting);
-        } else {
-          setError("Room not found. Return to meetings.");
-        }
-      } catch {
-        setError("Unable to connect to room.");
-      }
-      setLoading(false);
-    }
-    findMeeting();
+    const stored = sessionStorage.getItem(`meeting-${meetingId}`);
+    if (!stored) { setError("Room not found. Return to meetings."); setLoading(false); return; }
+    const { groupId: gId } = JSON.parse(stored);
+    setGroupId(gId);
+    meetingService.getMeeting(gId, meetingId)
+      .then((m) => setMeetingData(m))
+      .catch(() => setError("Unable to connect."))
+      .finally(() => setLoading(false));
   }, [meetingId]);
 
-  // Join backend
+  // ─── Join backend ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!meetingData || !groupId || meetingData.status !== "ACTIVE") return;
     meetingService.joinMeeting(groupId, meetingId).catch(() => {});
   }, [meetingData, groupId, meetingId]);
 
-  // Camera toggle
-  const toggleVideo = useCallback(async () => {
-    if (videoOn && localStream) {
-      localStream.getVideoTracks().forEach((t) => t.stop());
-      setLocalStream(null);
-      setVideoOn(false);
-    } else {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: micOn });
-        setLocalStream(stream);
-        setVideoOn(true);
+  // ─── Camera ──────────────────────────────────────────────────────────────────
+  const startCamera = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480, facingMode: "user" },
+        audio: micOn,
+      });
+      setMediaStream(stream);
+      setVideoOn(true);
+      // Attach to video element
+      setTimeout(() => {
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
         }
-      } catch {
-        toast.error("Camera access denied");
+      }, 50);
+    } catch (err) {
+      toast.error("Could not access camera. Check browser permissions.");
+    }
+  }, [micOn]);
+
+  const stopCamera = useCallback(() => {
+    if (mediaStream) {
+      mediaStream.getVideoTracks().forEach((t) => t.stop());
+      if (!micOn) {
+        mediaStream.getAudioTracks().forEach((t) => t.stop());
+        setMediaStream(null);
       }
     }
-  }, [videoOn, localStream, micOn]);
+    setVideoOn(false);
+  }, [mediaStream, micOn]);
 
-  // Mic toggle
+  const toggleVideo = useCallback(() => {
+    if (videoOn) stopCamera();
+    else startCamera();
+  }, [videoOn, startCamera, stopCamera]);
+
+  // ─── Microphone ──────────────────────────────────────────────────────────────
   const toggleMic = useCallback(async () => {
-    if (micOn && localStream) {
-      localStream.getAudioTracks().forEach((t) => t.stop());
-      if (!videoOn) {
-        setLocalStream(null);
-      }
+    if (micOn) {
+      mediaStream?.getAudioTracks().forEach((t) => t.stop());
       setMicOn(false);
     } else {
       try {
-        if (localStream) {
+        if (mediaStream) {
           const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          audioStream.getAudioTracks().forEach((t) => localStream.addTrack(t));
+          audioStream.getAudioTracks().forEach((t) => mediaStream.addTrack(t));
         } else {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          setLocalStream(stream);
+          setMediaStream(stream);
         }
         setMicOn(true);
       } catch {
         toast.error("Microphone access denied");
       }
     }
-  }, [micOn, localStream, videoOn]);
+  }, [micOn, mediaStream]);
 
-  // Attach video to ref when stream changes
+  // ─── Sync video ref ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
+    if (localVideoRef.current && mediaStream && videoOn) {
+      localVideoRef.current.srcObject = mediaStream;
     }
-  }, [localStream, videoOn]);
+  }, [mediaStream, videoOn]);
 
-  // Cleanup on unmount
+  // ─── Cleanup ─────────────────────────────────────────────────────────────────
   useEffect(() => {
-    return () => {
-      localStream?.getTracks().forEach((t) => t.stop());
-    };
-  }, [localStream]);
+    return () => { mediaStream?.getTracks().forEach((t) => t.stop()); };
+  }, [mediaStream]);
 
-  // Auto-scroll chat
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
-
-  const handleLeave = async () => {
-    localStream?.getTracks().forEach((t) => t.stop());
-    try { await meetingService.leaveMeeting(meetingId); } catch {}
-    router.push("/meetings");
-  };
+  // ─── Chat ────────────────────────────────────────────────────────────────────
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
 
   const handleSendChat = () => {
     if (!chatInput.trim()) return;
@@ -159,15 +169,34 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
     setChatInput("");
   };
 
-  // Status screens
+  // ─── Reactions (TikTok-style floating) ───────────────────────────────────────
+  const sendReaction = (emoji: string) => {
+    const reaction: FloatingReaction = {
+      id: crypto.randomUUID(),
+      emoji,
+      x: 20 + Math.random() * 60, // random x position (20-80%)
+    };
+    setFloatingReactions((prev) => [...prev, reaction]);
+    setTimeout(() => {
+      setFloatingReactions((prev) => prev.filter((r) => r.id !== reaction.id));
+    }, 3000);
+  };
+
+  // ─── Leave ───────────────────────────────────────────────────────────────────
+  const handleLeave = async () => {
+    mediaStream?.getTracks().forEach((t) => t.stop());
+    try { await meetingService.leaveMeeting(meetingId); } catch {}
+    router.push("/meetings");
+  };
+
+  // ─── Status screens ──────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-[#09090b]">
-        <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 2, repeat: Infinity }} className="text-center space-y-3">
-          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center mx-auto shadow-lg shadow-brand-500/30">
+        <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 2, repeat: Infinity }}>
+          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/30">
             <Sparkles className="h-7 w-7 text-white" />
           </div>
-          <p className="text-white/50 text-sm">Joining room…</p>
         </motion.div>
       </div>
     );
@@ -176,10 +205,10 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
   if (error || !meetingData) {
     return (
       <div className="h-screen flex items-center justify-center bg-[#09090b]">
-        <div className="text-center space-y-4 max-w-xs">
+        <div className="text-center space-y-4">
           <p className="text-4xl">🔇</p>
-          <h1 className="text-lg font-bold text-white">{error ?? "Room unavailable"}</h1>
-          <Button onClick={() => router.push("/meetings")} variant="ghost" className="text-white/50"><ArrowLeft className="h-4 w-4" /> Back</Button>
+          <h1 className="text-lg font-bold text-white">{error}</h1>
+          <button onClick={() => router.push("/meetings")} className="text-sm text-white/40 hover:text-white/70 flex items-center gap-1 mx-auto"><ArrowLeft className="h-4 w-4" /> Back</button>
         </div>
       </div>
     );
@@ -188,15 +217,15 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
   if (meetingData.status === "SCHEDULED") {
     return (
       <div className="h-screen flex items-center justify-center bg-[#09090b]">
-        <div className="text-center space-y-5 max-w-xs">
-          <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}>
-            <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center mx-auto shadow-2xl shadow-brand-500/40">
-              <Mic className="h-10 w-10 text-white" />
+        <div className="text-center space-y-5">
+          <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}>
+            <div className="h-24 w-24 rounded-3xl bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center mx-auto shadow-2xl shadow-brand-500/30">
+              <Mic className="h-12 w-12 text-white" />
             </div>
           </motion.div>
           <h1 className="text-xl font-bold text-white">{meetingData.title}</h1>
-          <p className="text-white/40 text-sm">The host hasn't opened this room yet.</p>
-          <Button onClick={() => router.push("/meetings")} variant="ghost" className="text-white/40"><ArrowLeft className="h-4 w-4" /> Back</Button>
+          <p className="text-white/40 text-sm">Waiting for host to open…</p>
+          <button onClick={() => router.push("/meetings")} className="text-sm text-white/30 hover:text-white/60 flex items-center gap-1 mx-auto"><ArrowLeft className="h-4 w-4" /> Back</button>
         </div>
       </div>
     );
@@ -205,11 +234,10 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
   if (meetingData.status === "ENDED") {
     return (
       <div className="h-screen flex items-center justify-center bg-[#09090b]">
-        <div className="text-center space-y-4 max-w-xs">
-          <div className="h-16 w-16 rounded-full bg-white/5 flex items-center justify-center mx-auto"><PhoneOff className="h-8 w-8 text-white/30" /></div>
+        <div className="text-center space-y-4">
+          <div className="h-16 w-16 rounded-full bg-white/5 flex items-center justify-center mx-auto"><PhoneOff className="h-8 w-8 text-white/20" /></div>
           <h1 className="text-lg font-bold text-white">Room closed</h1>
-          <p className="text-white/40 text-sm">&quot;{meetingData.title}&quot; ended.</p>
-          <Button onClick={() => router.push("/meetings")} variant="ghost" className="text-white/40"><ArrowLeft className="h-4 w-4" /> Back</Button>
+          <button onClick={() => router.push("/meetings")} className="text-sm text-white/30 hover:text-white/60 flex items-center gap-1 mx-auto"><ArrowLeft className="h-4 w-4" /> Back</button>
         </div>
       </div>
     );
@@ -218,96 +246,111 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
   // ─── ACTIVE ROOM ─────────────────────────────────────────────────────────────
   const isHost = meetingData.hostId === userId;
   const participantList = participants ?? [userId ?? ""];
-  const participantCount = participantList.length;
+  const count = participantList.length;
 
   return (
-    <div className="h-screen flex flex-col bg-[#09090b] select-none">
-      {/* ── Header ──────────────────────────────────────────────────────────────── */}
-      <header className="flex items-center justify-between px-4 py-2.5 bg-[#09090b]/80 backdrop-blur-xl border-b border-white/[0.04] z-20">
-        <div className="flex items-center gap-3 min-w-0">
-          <button onClick={handleLeave} className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-white transition-colors flex-shrink-0">
+    <div className="h-screen flex flex-col bg-[#09090b] select-none overflow-hidden">
+      {/* Floating reactions (TikTok-style) */}
+      <div className="fixed inset-0 pointer-events-none z-50">
+        <AnimatePresence>
+          {floatingReactions.map((r) => (
+            <motion.div
+              key={r.id}
+              initial={{ opacity: 1, y: "100vh", scale: 0.5 }}
+              animate={{ opacity: [1, 1, 0], y: "-20vh", scale: [0.5, 1.2, 1] }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 2.5, ease: "easeOut" }}
+              className="absolute text-3xl"
+              style={{ left: `${r.x}%` }}
+            >
+              {r.emoji}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {/* Header */}
+      <header className="flex items-center justify-between px-4 py-2 bg-[#09090b]/90 backdrop-blur-xl border-b border-white/[0.03] z-20 flex-shrink-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <button onClick={handleLeave} className="p-1.5 rounded-lg hover:bg-white/5 text-white/40 hover:text-white transition-colors">
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="text-sm font-semibold text-white truncate">{meetingData.title}</h1>
-              <span className="flex items-center gap-1 text-[9px] bg-red-500/15 text-red-400 px-1.5 py-0.5 rounded-md font-semibold tracking-wide flex-shrink-0">
+              <h1 className="text-[13px] font-semibold text-white truncate">{meetingData.title}</h1>
+              <span className="flex items-center gap-1 text-[9px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded font-bold tracking-wider flex-shrink-0">
                 <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" /> LIVE
               </span>
             </div>
-            <p className="text-[11px] text-white/30 flex items-center gap-1.5 mt-0.5">
-              {meetingData.privacy === "PUBLIC" ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+            <p className="text-[10px] text-white/25 flex items-center gap-1.5">
+              {meetingData.privacy === "PUBLIC" ? <Globe className="h-2.5 w-2.5" /> : <Lock className="h-2.5 w-2.5" />}
               {meetingData.privacy === "PUBLIC" ? "Open" : "Private"}
-              <span className="text-white/15">·</span>
-              <Users className="h-3 w-3" /> {participantCount}
+              <span>·</span>
+              <Users className="h-2.5 w-2.5" /> {count}
             </p>
           </div>
         </div>
-
         <div className="flex items-center gap-1">
-          <button onClick={() => navigator.clipboard.writeText(`${window.location.origin}/meetings/${meetingId}`) && toast.success("Link copied")} className="p-2 rounded-lg hover:bg-white/5 text-white/40 hover:text-white transition-colors" title="Copy link">
-            <Copy className="h-4 w-4" />
+          <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/meetings/${meetingId}`); toast.success("Link copied"); }} className="p-2 rounded-lg hover:bg-white/5 text-white/30 hover:text-white transition-colors">
+            <Copy className="h-3.5 w-3.5" />
           </button>
-          <button onClick={() => setShowChat(!showChat)} className={`p-2 rounded-lg transition-colors ${showChat ? "bg-brand-500/15 text-brand-400" : "hover:bg-white/5 text-white/40 hover:text-white"}`}>
-            <MessageCircle className="h-4 w-4" />
-            {chatMessages.length > 0 && !showChat && <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-brand-500" />}
+          <button onClick={() => setShowChat(!showChat)} className={`relative p-2 rounded-lg transition-colors ${showChat ? "bg-brand-500/10 text-brand-400" : "hover:bg-white/5 text-white/30 hover:text-white"}`}>
+            <MessageCircle className="h-3.5 w-3.5" />
           </button>
         </div>
       </header>
 
-      {/* ── Stage ───────────────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex overflow-hidden">
-        <div className="flex-1 flex flex-col">
-          {/* Video / Avatar grid */}
-          <div className="flex-1 p-4 sm:p-8 flex items-center justify-center overflow-y-auto">
-            <div className={`grid gap-4 w-full max-w-4xl ${participantCount <= 1 ? "grid-cols-1 max-w-md" : participantCount <= 4 ? "grid-cols-2" : "grid-cols-3"}`}>
+      {/* Main */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        {/* Stage */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex-1 p-3 sm:p-5 flex items-center justify-center min-h-0 relative">
+            <div className={`grid gap-2 sm:gap-3 w-full h-full max-w-5xl ${count <= 1 ? "grid-cols-1" : count <= 4 ? "grid-cols-2" : "grid-cols-3"} auto-rows-fr`}>
               {participantList.map((pId, idx) => {
                 const isSelf = pId === userId;
-                const isParticipantHost = pId === meetingData.hostId;
+                const isPHost = pId === meetingData.hostId;
 
                 return (
                   <motion.div
                     key={pId}
-                    initial={{ scale: 0.8, opacity: 0 }}
+                    initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: idx * 0.08, type: "spring", stiffness: 200 }}
-                    className={`relative aspect-video rounded-2xl overflow-hidden ${isSelf && videoOn ? "" : "bg-gradient-to-br from-[#1a1a2e] to-[#16162a]"} border border-white/[0.04] shadow-xl`}
+                    transition={{ delay: idx * 0.06, type: "spring", stiffness: 300, damping: 25 }}
+                    className="relative rounded-2xl overflow-hidden bg-[#13131a] border border-white/[0.03]"
                   >
-                    {/* Self video */}
                     {isSelf && videoOn ? (
-                      <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-full object-cover mirror" />
+                      <video
+                        ref={localVideoRef}
+                        autoPlay
+                        muted
+                        playsInline
+                        className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
+                      />
                     ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-b from-[#18182a] to-[#0e0e14]">
                         <motion.div
-                          animate={isSelf && micOn ? { boxShadow: ["0 0 0 0 rgba(139,92,246,0)", "0 0 0 12px rgba(139,92,246,0.15)", "0 0 0 0 rgba(139,92,246,0)"] } : {}}
-                          transition={{ duration: 2, repeat: Infinity }}
+                          animate={isSelf && micOn ? { boxShadow: ["0 0 0 0 rgba(168,85,247,0)", "0 0 0 16px rgba(168,85,247,0.1)", "0 0 0 0 rgba(168,85,247,0)"] } : {}}
+                          transition={{ duration: 1.8, repeat: Infinity }}
                           className="rounded-full"
                         >
-                          <div className={`h-16 w-16 sm:h-20 sm:w-20 rounded-full overflow-hidden ring-2 ${isParticipantHost ? "ring-yellow-400/50" : "ring-white/10"}`}>
-                            <Avatar name={isSelf ? currentUser?.name : undefined} size="xl" className="h-full w-full text-2xl" />
+                          <div className={`h-16 w-16 sm:h-20 sm:w-20 rounded-full ring-2 ${isPHost ? "ring-yellow-400/50" : "ring-white/[0.06]"} overflow-hidden`}>
+                            <Avatar name={isSelf ? currentUser?.name : undefined} size="xl" className="h-full w-full text-xl" />
                           </div>
                         </motion.div>
-                        <span className="text-xs text-white/50 font-medium">
-                          {isSelf ? (currentUser?.name ?? "You") : `Participant ${idx + 1}`}
-                        </span>
                       </div>
                     )}
 
-                    {/* Overlays */}
-                    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-                      <span className="text-[11px] text-white/70 font-medium bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-md flex items-center gap-1">
-                        {isParticipantHost && <Crown className="h-3 w-3 text-yellow-400" />}
-                        {isSelf ? (currentUser?.name ?? "You") : `User ${idx + 1}`}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        {isSelf && !micOn && (
-                          <span className="h-5 w-5 rounded-full bg-red-500/80 flex items-center justify-center">
-                            <MicOff className="h-3 w-3 text-white" />
-                          </span>
-                        )}
-                        {handRaised && isSelf && (
-                          <span className="text-sm">✋</span>
-                        )}
+                    {/* Overlay */}
+                    <div className="absolute bottom-0 inset-x-0 p-2.5 bg-gradient-to-t from-black/60 via-black/20 to-transparent">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-white/80 font-medium flex items-center gap-1 bg-black/30 backdrop-blur-sm px-2 py-0.5 rounded-md">
+                          {isPHost && <Crown className="h-3 w-3 text-yellow-400" />}
+                          {isSelf ? (currentUser?.name ?? "You") : `User ${idx + 1}`}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          {isSelf && !micOn && <span className="h-5 w-5 rounded-full bg-red-500/80 flex items-center justify-center"><MicOff className="h-2.5 w-2.5 text-white" /></span>}
+                          {handRaised && isSelf && <span className="text-base animate-bounce">✋</span>}
+                        </div>
                       </div>
                     </div>
                   </motion.div>
@@ -316,95 +359,104 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
             </div>
           </div>
 
-          {/* ── Controls bar ────────────────────────────────────────────────────── */}
-          <div className="px-4 py-3 bg-[#0f0f13]/80 backdrop-blur-xl border-t border-white/[0.04]">
-            <div className="flex items-center justify-center gap-2 sm:gap-3">
-              <ControlButton active={micOn} danger={!micOn} onClick={toggleMic} label={micOn ? "Mute" : "Unmute"}>
-                {micOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
-              </ControlButton>
+          {/* Controls */}
+          <div className="px-4 py-3 flex-shrink-0 border-t border-white/[0.03]">
+            <div className="flex items-center justify-center gap-2">
+              {/* Mic */}
+              <CtrlBtn active={micOn} danger={!micOn} onClick={toggleMic}>
+                {micOn ? <Mic className="h-[18px] w-[18px]" /> : <MicOff className="h-[18px] w-[18px]" />}
+              </CtrlBtn>
+              {/* Video */}
+              <CtrlBtn active={videoOn} onClick={toggleVideo}>
+                {videoOn ? <Video className="h-[18px] w-[18px]" /> : <VideoOff className="h-[18px] w-[18px]" />}
+              </CtrlBtn>
+              {/* Hand */}
+              <CtrlBtn active={handRaised} highlight={handRaised} onClick={() => { setHandRaised(!handRaised); toast(handRaised ? "Hand lowered" : "✋ Raised"); }}>
+                <Hand className="h-[18px] w-[18px]" />
+              </CtrlBtn>
 
-              <ControlButton active={videoOn} onClick={toggleVideo} label={videoOn ? "Stop video" : "Start video"}>
-                {videoOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
-              </ControlButton>
+              {/* Reactions */}
+              <div className="relative">
+                <CtrlBtn active={showReactions} highlight={showReactions} onClick={() => setShowReactions(!showReactions)}>
+                  <Heart className="h-[18px] w-[18px]" />
+                </CtrlBtn>
+                <AnimatePresence>
+                  {showReactions && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                      className="absolute bottom-14 left-1/2 -translate-x-1/2 bg-[#1a1a24] border border-white/[0.06] rounded-2xl px-2 py-1.5 flex gap-1 shadow-xl"
+                    >
+                      {REACTIONS.map((r) => (
+                        <motion.button
+                          key={r.emoji}
+                          whileTap={{ scale: 1.4 }}
+                          onClick={() => { sendReaction(r.emoji); setShowReactions(false); }}
+                          className="h-9 w-9 rounded-xl hover:bg-white/5 flex items-center justify-center text-lg transition-colors"
+                        >
+                          {r.emoji}
+                        </motion.button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
-              <ControlButton active={handRaised} highlight={handRaised} onClick={() => { setHandRaised(!handRaised); toast(handRaised ? "Hand lowered" : "✋ Hand raised"); }} label="Raise hand">
-                <Hand className="h-5 w-5" />
-              </ControlButton>
+              <div className="w-px h-6 bg-white/[0.06] mx-1" />
 
-              <div className="w-px h-7 bg-white/10 mx-1 hidden sm:block" />
-
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={handleLeave}
-                className="h-11 px-5 rounded-2xl bg-red-500 hover:bg-red-600 text-white flex items-center gap-2 font-medium text-sm transition-all shadow-lg shadow-red-500/20"
-              >
+              {/* Leave */}
+              <motion.button whileTap={{ scale: 0.9 }} onClick={handleLeave} className="h-10 px-4 rounded-2xl bg-red-500 hover:bg-red-600 text-white flex items-center gap-1.5 text-[13px] font-medium transition-all shadow-lg shadow-red-500/20">
                 <PhoneOff className="h-4 w-4" /> Leave
               </motion.button>
 
               {isHost && (
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={async () => {
-                    if (groupId) {
-                      localStream?.getTracks().forEach((t) => t.stop());
-                      await meetingService.endMeeting(groupId, meetingId);
-                      toast.success("Room ended");
-                      router.push("/meetings");
-                    }
-                  }}
-                  className="h-11 px-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white text-sm transition-all hidden sm:flex items-center gap-1.5"
-                >
-                  End for all
+                <motion.button whileTap={{ scale: 0.9 }} onClick={async () => {
+                  if (!groupId) return;
+                  mediaStream?.getTracks().forEach((t) => t.stop());
+                  await meetingService.endMeeting(groupId, meetingId);
+                  toast.success("Room ended");
+                  router.push("/meetings");
+                }} className="h-10 px-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] text-white/40 hover:text-white text-[12px] transition-all hidden sm:flex items-center">
+                  End
                 </motion.button>
               )}
             </div>
           </div>
         </div>
 
-        {/* ── Chat panel ───────────────────────────────────────────────────────── */}
+        {/* Chat */}
         <AnimatePresence>
           {showChat && (
             <motion.aside
               initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 320, opacity: 1 }}
+              animate={{ width: 300, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="border-l border-white/[0.04] flex flex-col bg-[#0f0f13] overflow-hidden"
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="border-l border-white/[0.03] flex flex-col bg-[#0c0c10] overflow-hidden flex-shrink-0"
             >
-              <div className="px-4 py-3 border-b border-white/[0.04] flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-white">Chat</h2>
-                <span className="text-[10px] text-white/30">{chatMessages.length} messages</span>
+              <div className="px-4 py-2.5 border-b border-white/[0.03]">
+                <h2 className="text-xs font-semibold text-white/60 uppercase tracking-wider">Live Chat</h2>
               </div>
-              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 scrollbar-thin scrollbar-thumb-white/10">
+              <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2.5 min-h-0">
                 {chatMessages.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-full gap-2">
-                    <MessageCircle className="h-8 w-8 text-white/10" />
-                    <p className="text-xs text-white/20">Messages appear here</p>
-                  </div>
+                  <p className="text-[11px] text-white/15 text-center mt-10">No messages yet</p>
                 )}
                 {chatMessages.map((msg) => (
-                  <motion.div key={msg.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex gap-2.5">
+                  <motion.div key={msg.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} className="flex gap-2">
                     <Avatar name={msg.name} size="xs" />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-[11px] font-semibold text-white/70">{msg.name}</span>
-                        <span className="text-[9px] text-white/20">{msg.time}</span>
-                      </div>
-                      <p className="text-[13px] text-white/50 break-words leading-relaxed">{msg.text}</p>
+                    <div>
+                      <span className="text-[10px] font-semibold text-white/50">{msg.name} <span className="text-white/15 font-normal">{msg.time}</span></span>
+                      <p className="text-[12px] text-white/40 leading-relaxed">{msg.text}</p>
                     </div>
                   </motion.div>
                 ))}
                 <div ref={chatEndRef} />
               </div>
-              <form onSubmit={(e) => { e.preventDefault(); handleSendChat(); }} className="px-3 py-2.5 border-t border-white/[0.04] flex gap-2">
-                <input
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Type a message…"
-                  className="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-500/40 transition-colors"
-                />
-                <button type="submit" disabled={!chatInput.trim()} className="p-2 rounded-xl bg-brand-500 hover:bg-brand-600 disabled:opacity-30 disabled:hover:bg-brand-500 text-white transition-all">
-                  <Send className="h-4 w-4" />
+              <form onSubmit={(e) => { e.preventDefault(); handleSendChat(); }} className="px-2.5 py-2 border-t border-white/[0.03] flex gap-1.5">
+                <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder="Say something…" className="flex-1 bg-white/[0.03] border border-white/[0.05] rounded-xl px-3 py-1.5 text-[12px] text-white placeholder-white/15 focus:outline-none focus:border-brand-500/30" />
+                <button type="submit" disabled={!chatInput.trim()} className="p-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 disabled:opacity-20 text-white transition-all">
+                  <Send className="h-3.5 w-3.5" />
                 </button>
               </form>
             </motion.aside>
@@ -415,29 +467,18 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
   );
 }
 
-// ─── Control Button Component ──────────────────────────────────────────────────
-
-function ControlButton({ active, danger, highlight, onClick, label, children }: {
-  active?: boolean;
-  danger?: boolean;
-  highlight?: boolean;
-  onClick: () => void;
-  label: string;
-  children: React.ReactNode;
+// ─── Control Button ────────────────────────────────────────────────────────────
+function CtrlBtn({ active, danger, highlight, onClick, children }: {
+  active?: boolean; danger?: boolean; highlight?: boolean; onClick: () => void; children: React.ReactNode;
 }) {
   return (
-    <motion.button
-      whileTap={{ scale: 0.85 }}
-      onClick={onClick}
-      title={label}
-      className={`h-11 w-11 rounded-2xl flex items-center justify-center transition-all ${
-        danger ? "bg-red-500/15 text-red-400 hover:bg-red-500/25" :
-        highlight ? "bg-yellow-500/15 text-yellow-400 hover:bg-yellow-500/25" :
+    <motion.button whileTap={{ scale: 0.85 }} onClick={onClick}
+      className={`h-10 w-10 rounded-2xl flex items-center justify-center transition-all ${
+        danger ? "bg-red-500/10 text-red-400 hover:bg-red-500/20" :
+        highlight ? "bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20" :
         active ? "bg-white/10 text-white hover:bg-white/15" :
-        "bg-white/[0.04] text-white/40 hover:bg-white/[0.08] hover:text-white/70"
+        "bg-white/[0.03] text-white/30 hover:bg-white/[0.06] hover:text-white/60"
       }`}
-    >
-      {children}
-    </motion.button>
+    >{children}</motion.button>
   );
 }
