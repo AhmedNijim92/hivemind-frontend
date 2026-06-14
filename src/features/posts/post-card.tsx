@@ -74,21 +74,23 @@ export function PostCard({ post, index = 0 }: PostCardProps) {
     >
       {/* Header */}
       <div className="flex items-start gap-3 px-5 pt-5 pb-2">
-        <Link href={`/profile/${post.authorId}`}>
-          <Avatar name={post.authorName !== "Unknown" ? post.authorName : undefined} src={post.authorProfilePictureUrl} size="md" />
+        <Link href={`/groups/${post.groupId}`}>
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center flex-shrink-0">
+            <span className="text-white font-bold text-sm">{post.groupName?.[0]?.toUpperCase() ?? "G"}</span>
+          </div>
         </Link>
         <div className="flex-1 min-w-0">
-          {/* Group name — primary context */}
-          {post.groupName && (
+          {/* Group name — which group this post belongs to */}
+          <div className="flex items-center gap-1.5">
             <Link href={`/groups/${post.groupId}`} className="hover:underline">
-              <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-tight">{post.groupName}</p>
+              <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-tight">{post.groupName ?? "Group"}</p>
             </Link>
-          )}
-          {/* Author name + time */}
+          </div>
+          {/* Author + time */}
           <div className="flex items-center gap-1.5 mt-0.5">
             <Link href={`/profile/${post.authorId}`} className="hover:underline">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                {post.authorName !== "Unknown" ? post.authorName : "Member"}
+                {post.authorName !== "Unknown" ? post.authorName : "a member"}
               </span>
             </Link>
             <span className="text-gray-300 dark:text-gray-600 text-xs">·</span>
@@ -192,8 +194,8 @@ export function PostCard({ post, index = 0 }: PostCardProps) {
       {/* Content */}
       <div className="px-5 pb-3">
         <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
-          <Link href={`/profile/${post.authorId}`} className="font-semibold text-gray-900 dark:text-white hover:underline mr-1.5">
-            {post.authorName !== "Unknown" ? post.authorName : (post.groupName ?? "Member")}
+          <Link href={`/groups/${post.groupId}`} className="font-semibold text-gray-900 dark:text-white hover:underline mr-1.5">
+            {post.groupName ?? "Group"}
           </Link>
           <span className="whitespace-pre-wrap">{displayContent}</span>
           {isLong && !expanded && (

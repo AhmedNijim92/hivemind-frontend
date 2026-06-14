@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { postService } from "@/services/post.service";
 import { useGroupContextStore } from "@/store/group-context-store";
 import { useFollowedGroups, useMyGroups } from "@/hooks/use-groups";
+import { useAuthStore } from "@/store/auth-store";
+import { useCurrentUser } from "@/hooks/use-user";
 import type { PostDto } from "@/types";
 
 export const feedKeys = {
@@ -13,13 +15,15 @@ export const feedKeys = {
  * Fetches the aggregated public feed:
  * - Posts from the active group
  * - Posts from groups the active group follows
- * - Enriches posts with groupName from user's groups
+ * - Enriches posts with groupName and authorName
  */
 export function usePublicFeed() {
   const activeGroupId = useGroupContextStore((s) => s.activeGroupId);
   const activeGroup = useGroupContextStore((s) => s.activeGroup);
   const { data: followedGroups } = useFollowedGroups(activeGroupId ?? "");
   const { data: myGroups } = useMyGroups();
+  const userId = useAuthStore((s) => s.userId);
+  const { data: currentUser } = useCurrentUser();
 
   // Build list of group IDs: active group + followed groups
   const groupIds = activeGroupId
@@ -33,19 +37,27 @@ export function usePublicFeed() {
     staleTime: 1000 * 30,
   });
 
-  // Enrich posts with group names
+  // Enrich posts with group names and fix "Unknown" author for own posts
   const enrichedPosts: PostDto[] | undefined = query.data?.map((post) => {
-    if (post.groupName) return post;
+    let groupName = post.groupName;
+    let authorName = post.authorName;
 
-    let groupName: string | undefined;
-    if (post.groupId === activeGroupId && activeGroup) {
-      groupName = activeGroup.name;
-    } else {
-      const matched = myGroups?.find((g) => g.groupId === post.groupId);
-      groupName = matched?.name;
+    // Enrich group name
+    if (!groupName) {
+      if (post.groupId === activeGroupId && activeGroup) {
+        groupName = activeGroup.name;
+      } else {
+        const matched = myGroups?.find((g) => g.groupId === post.groupId);
+        groupName = matched?.name;
+      }
     }
 
-    return { ...post, groupName };
+    // Fix "Unknown" author for own posts
+    if (authorName === "Unknown" && post.authorId === userId && currentUser?.name) {
+      authorName = currentUser.name;
+    }
+
+    return { ...post, groupName, authorName };
   });
 
   return { ...query, data: enrichedPosts };
