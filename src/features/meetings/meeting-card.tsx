@@ -1,10 +1,11 @@
 "use client";
 
-import { Video, Users, Clock, Play, CheckCircle } from "lucide-react";
+import { Video, Users, Clock, Play, CheckCircle, Lock, Globe } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useStartMeeting, useJoinMeeting } from "@/hooks/use-meetings";
+import { useStartMeeting } from "@/hooks/use-meetings";
 import { useAuthStore } from "@/store/auth-store";
 import { timeAgo, formatDate } from "@/utils/format";
 import type { MeetingDto } from "@/types";
@@ -21,14 +22,25 @@ const statusVariant = {
 } as const;
 
 export function MeetingCard({ meeting, index = 0 }: MeetingCardProps) {
+  const router = useRouter();
   const userId = useAuthStore((s) => s.userId);
   const startMeeting = useStartMeeting();
-  const joinMeeting = useJoinMeeting();
 
   const isHost = meeting.hostId === userId;
   const isActive = meeting.status === "ACTIVE";
   const isScheduled = meeting.status === "SCHEDULED";
   const isEnded = meeting.status === "ENDED";
+
+  const enterRoom = () => {
+    // Store groupId so the room page can find the meeting
+    sessionStorage.setItem(`meeting-${meeting.meetingId}`, JSON.stringify({ groupId: meeting.groupId }));
+    router.push(`/meetings/${meeting.meetingId}`);
+  };
+
+  const handleStart = async () => {
+    await startMeeting.mutateAsync({ groupId: meeting.groupId, meetingId: meeting.meetingId });
+    enterRoom();
+  };
 
   return (
     <motion.div
@@ -79,12 +91,10 @@ export function MeetingCard({ meeting, index = 0 }: MeetingCardProps) {
           <Users className="h-3.5 w-3.5" />
           <span className="font-medium">{meeting.participantCount}</span> joined
         </span>
-        {meeting.scheduledAt && (
-          <span className="flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5" />
-            {formatDate(meeting.scheduledAt, "MMM d, h:mm a")}
-          </span>
-        )}
+        <span className="flex items-center gap-1">
+          {meeting.privacy === "PUBLIC" ? <Globe className="h-3.5 w-3.5 text-green-500" /> : <Lock className="h-3.5 w-3.5 text-yellow-500" />}
+          {meeting.privacy === "PUBLIC" ? "Anyone can join" : "Members only"}
+        </span>
         {meeting.startedAt && isActive && (
           <span className="flex items-center gap-1 text-emerald-500">
             <Play className="h-3.5 w-3.5" />
@@ -106,12 +116,7 @@ export function MeetingCard({ meeting, index = 0 }: MeetingCardProps) {
             <Button
               size="sm"
               variant="gradient"
-              onClick={() =>
-                startMeeting.mutate({
-                  groupId: meeting.groupId,
-                  meetingId: meeting.meetingId,
-                })
-              }
+              onClick={handleStart}
               loading={startMeeting.isPending}
               className="flex-1"
             >
@@ -119,26 +124,14 @@ export function MeetingCard({ meeting, index = 0 }: MeetingCardProps) {
               Start meeting
             </Button>
           )}
-          {isActive && !isHost && (
+          {isActive && (
             <Button
               size="sm"
-              onClick={() =>
-                joinMeeting.mutate({
-                  groupId: meeting.groupId,
-                  meetingId: meeting.meetingId,
-                })
-              }
-              loading={joinMeeting.isPending}
+              onClick={enterRoom}
               className="flex-1"
             >
               <Video className="h-3.5 w-3.5" />
-              Join meeting
-            </Button>
-          )}
-          {isActive && isHost && (
-            <Button size="sm" variant="secondary" className="flex-1">
-              <Video className="h-3.5 w-3.5" />
-              Rejoin
+              {isHost ? "Rejoin" : "Join meeting"}
             </Button>
           )}
         </div>
