@@ -1,6 +1,6 @@
 // ─── Media Service DTOs ───────────────────────────────────────────────────────
 
-export type MediaReferenceType = "POST" | "GROUP" | "USER_AVATAR";
+export type MediaReferenceType = "POST" | "GROUP" | "USER_AVATAR" | "COVER_PHOTO";
 
 export interface MediaFileDto {
   mediaId: string;

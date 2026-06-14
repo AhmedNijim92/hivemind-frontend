@@ -20,6 +20,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.s3.amazonaws.com" },
       { protocol: "https", hostname: "api.dicebear.com" },
       { protocol: "http", hostname: "localhost" },
+      { protocol: "http", hostname: "api-gateway" },
     ],
   },
   experimental: {
