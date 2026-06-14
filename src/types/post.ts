@@ -3,8 +3,10 @@
 export interface PostDto {
   postId: string;
   groupId: string;
+  groupName?: string;
   authorId: string;
   authorName: string;
+  authorProfilePictureUrl?: string | null;
   content: string;
   mediaUrl: string | null;
   likeCount: number;

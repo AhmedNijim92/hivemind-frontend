@@ -70,18 +70,30 @@ export function PostCard({ post, index = 0 }: PostCardProps) {
       whileHover={{ y: -2 }}
       className="card overflow-hidden group/card"
       role="article"
-      aria-label={`Post by ${post.authorName}`}
+      aria-label={`Post by ${post.authorName !== "Unknown" ? post.authorName : "a member"}${post.groupName ? ` in ${post.groupName}` : ""}`}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 px-5 pt-5 pb-2">
+      <div className="flex items-start gap-3 px-5 pt-5 pb-2">
         <Link href={`/profile/${post.authorId}`}>
-          <Avatar name={post.authorName} size="md" />
+          <Avatar name={post.authorName !== "Unknown" ? post.authorName : undefined} src={post.authorProfilePictureUrl} size="md" />
         </Link>
         <div className="flex-1 min-w-0">
-          <Link href={`/profile/${post.authorId}`} className="hover:underline">
-            <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{post.authorName}</p>
-          </Link>
-          <time className="text-xs text-gray-400" dateTime={post.createdAt}>{timeAgo(post.createdAt)}</time>
+          {/* Group name — primary context */}
+          {post.groupName && (
+            <Link href={`/groups/${post.groupId}`} className="hover:underline">
+              <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-tight">{post.groupName}</p>
+            </Link>
+          )}
+          {/* Author name + time */}
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <Link href={`/profile/${post.authorId}`} className="hover:underline">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                {post.authorName !== "Unknown" ? post.authorName : "Member"}
+              </span>
+            </Link>
+            <span className="text-gray-300 dark:text-gray-600 text-xs">·</span>
+            <time className="text-xs text-gray-400" dateTime={post.createdAt}>{timeAgo(post.createdAt)}</time>
+          </div>
         </div>
         <motion.button
           whileHover={{ scale: 1.1 }}
@@ -181,7 +193,7 @@ export function PostCard({ post, index = 0 }: PostCardProps) {
       <div className="px-5 pb-3">
         <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
           <Link href={`/profile/${post.authorId}`} className="font-semibold text-gray-900 dark:text-white hover:underline mr-1.5">
-            {post.authorName}
+            {post.authorName !== "Unknown" ? post.authorName : (post.groupName ?? "Member")}
           </Link>
           <span className="whitespace-pre-wrap">{displayContent}</span>
           {isLong && !expanded && (
