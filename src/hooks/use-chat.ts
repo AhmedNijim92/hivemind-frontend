@@ -1,9 +1,11 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { useChatStore } from "@/store/chat-store";
 import { useAuthStore } from "@/store/auth-store";
-import type { Conversation } from "@/types/chat";
+import { chatService, ChatMessageDto } from "@/services/chat.service";
+import type { Conversation, ChatMessage } from "@/types/chat";
 
 /** Returns sorted conversations for the current user */
 export function useConversations() {
@@ -18,19 +20,46 @@ export function useConversations() {
   }, [userId, conversations]);
 }
 
-/** Returns messages for a specific conversation */
+/** Returns messages for a specific conversation — polls server every 2s */
 export function useMessages(conversationId: string) {
-  const allMessages = useChatStore((s) => s.messages);
-  return useMemo(
-    () => allMessages[conversationId] ?? [],
-    [allMessages, conversationId]
-  );
+  const userId = useAuthStore((s) => s.userId);
+  const localMessages = useChatStore((s) => s.messages[conversationId] ?? []);
+
+  // Poll server for messages
+  const { data: serverMessages } = useQuery({
+    queryKey: ["chat", "messages", conversationId],
+    queryFn: () => chatService.getMessages(conversationId),
+    enabled: !!conversationId && !!userId,
+    refetchInterval: 2000,
+    staleTime: 1000,
+  });
+
+  // Merge: prefer server messages if available, fall back to local
+  return useMemo(() => {
+    if (serverMessages && serverMessages.length > 0) {
+      // Convert server format to local ChatMessage format
+      return serverMessages.map((m): ChatMessage => ({
+        id: m.id,
+        conversationId: m.conversationId,
+        senderId: m.senderId,
+        senderName: m.senderName,
+        content: m.content,
+        imageUrl: m.imageUrl,
+        createdAt: m.timestamp,
+        read: true,
+        reactions: {},
+        deleted: false,
+      }));
+    }
+    return localMessages;
+  }, [serverMessages, localMessages]);
 }
 
-/** Returns a function to send a message */
+/** Returns a function to send a message — saves to server + local store */
 export function useSendMessage() {
-  const sendMessage = useChatStore((s) => s.sendMessage);
+  const sendLocalMessage = useChatStore((s) => s.sendMessage);
   const userId = useAuthStore((s) => s.userId);
+  const qc = useQueryClient();
 
   return useCallback(
     (conversationId: string, senderName: string, content: string, imageUrl?: string) => {
@@ -39,9 +68,23 @@ export function useSendMessage() {
         return null;
       }
       if (!content.trim() && !imageUrl) return null;
-      return sendMessage(conversationId, userId, senderName, content.trim(), imageUrl);
+
+      // Save locally for instant display
+      const msg = sendLocalMessage(conversationId, userId, senderName, content.trim(), imageUrl);
+
+      // Send to server for other users to see
+      chatService.sendMessage(conversationId, content.trim(), imageUrl)
+        .then(() => {
+          // Refresh messages from server
+          qc.invalidateQueries({ queryKey: ["chat", "messages", conversationId] });
+        })
+        .catch(() => {
+          // Message still saved locally even if server fails
+        });
+
+      return msg;
     },
-    [sendMessage, userId]
+    [sendLocalMessage, userId, qc]
   );
 }
 
