@@ -5,7 +5,10 @@ import {
 } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { postService } from "@/services/post.service";
-import type { CreatePostRequest, AddCommentRequest } from "@/types";
+import { useAuthStore } from "@/store/auth-store";
+import { useCurrentUser } from "@/hooks/use-user";
+import { useGroup } from "@/hooks/use-groups";
+import type { CreatePostRequest, AddCommentRequest, PostDto } from "@/types";
 
 export const postKeys = {
   all: ["posts"] as const,
@@ -16,12 +19,30 @@ export const postKeys = {
 };
 
 export function useGroupPosts(groupId: string) {
-  return useQuery({
+  const userId = useAuthStore((s) => s.userId);
+  const { data: currentUser } = useCurrentUser();
+  const { data: group } = useGroup(groupId);
+
+  const query = useQuery({
     queryKey: postKeys.byGroup(groupId),
     queryFn: () => postService.getPostsByGroup(groupId),
     enabled: !!groupId,
-    staleTime: 1000 * 30, // 30s — posts are fresh
+    staleTime: 1000 * 30,
   });
+
+  // Enrich posts with group name and fix Unknown author
+  const enrichedPosts: PostDto[] | undefined = query.data?.map((post) => {
+    let authorName = post.authorName;
+    const groupName = post.groupName || group?.name;
+
+    if (authorName === "Unknown" && post.authorId === userId && currentUser?.name) {
+      authorName = currentUser.name;
+    }
+
+    return { ...post, groupName, authorName };
+  });
+
+  return { ...query, data: enrichedPosts };
 }
 
 export function usePost(groupId: string, postId: string) {

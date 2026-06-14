@@ -150,12 +150,17 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </div>
+                {/* Avatar upload overlay */}
                 <label className="absolute inset-0 rounded-full bg-black/0 group-hover/avatar:bg-black/40 flex items-center justify-center cursor-pointer transition-all duration-300">
                   <Camera className="h-6 w-6 text-white opacity-0 group-hover/avatar:opacity-100 transition-opacity" />
                   <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
                 </label>
+                {/* Always-visible camera badge */}
+                <label className="absolute bottom-1 right-1 h-8 w-8 rounded-full bg-brand-500 flex items-center justify-center cursor-pointer hover:bg-brand-600 transition-colors shadow-md ring-2 ring-white dark:ring-surface-dark-2 z-10">
+                  <Camera className="h-4 w-4 text-white" />
+                  <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
+                </label>
                 {uploadingAvatar && <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center"><div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" /></div>}
-                <div className="absolute bottom-2 right-2 h-4 w-4 rounded-full bg-green-500 ring-2 ring-white dark:ring-surface-dark-2" />
               </div>
 
               {/* Name & bio */}
