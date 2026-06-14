@@ -47,6 +47,10 @@ const nextConfig: NextConfig = {
           source: "/api/v1/:path*",
           destination: `${apiGatewayUrl}/api/v1/:path*`,
         },
+        {
+          source: "/ws/:path*",
+          destination: `${apiGatewayUrl}/ws/:path*`,
+        },
       ],
       afterFiles: [],
       fallback: [],
