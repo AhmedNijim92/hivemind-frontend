@@ -3,6 +3,7 @@
 import { use, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import Image from "next/image";
 import {
   Users, Lock, Globe, Plus, Video, ArrowLeft, UserMinus, UserPlus,
   FileText, Calendar, MessageCircle, Share2, Crown, Shield, User,
@@ -154,9 +155,9 @@ export default function GroupDetailPage({ params }: { params: Promise<{ groupId:
             <Share2 className="h-5 w-5" />
           </button>
 
-          {/* Cover upload button for admins */}
+          {/* Cover upload button for admins — positioned above group identity */}
           {isAdmin && (
-            <label className="absolute bottom-3 right-3 z-10 flex items-center gap-2 px-3 py-2 rounded-lg bg-black/50 backdrop-blur-sm text-white text-xs font-medium cursor-pointer hover:bg-black/70 transition-colors">
+            <label className="absolute top-3 right-14 z-30 flex items-center gap-2 px-3 py-2 rounded-lg bg-black/50 backdrop-blur-sm text-white text-xs font-medium cursor-pointer hover:bg-black/70 transition-colors shadow-lg">
               <Camera className="h-4 w-4" />
               {uploadingCover ? "Uploading…" : "Edit cover"}
               <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} disabled={uploadingCover} />
@@ -170,8 +171,31 @@ export default function GroupDetailPage({ params }: { params: Promise<{ groupId:
 
           {/* Group identity on cover */}
           <div className="absolute bottom-4 left-4 right-4 z-10 flex items-end gap-4">
-            <div className="h-20 w-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-xl flex-shrink-0">
-              <span className="text-white font-bold text-3xl">{group.name[0].toUpperCase()}</span>
+            {/* Group avatar with upload for admins */}
+            <div className="relative flex-shrink-0">
+              <div className="h-20 w-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-xl overflow-hidden relative">
+                {group.profilePictureUrl ? (
+                  <Image src={group.profilePictureUrl} alt={group.name} fill className="object-cover" />
+                ) : (
+                  <span className="text-white font-bold text-3xl">{group.name[0].toUpperCase()}</span>
+                )}
+              </div>
+              {isAdmin && (
+                <label className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-brand-500 flex items-center justify-center cursor-pointer hover:bg-brand-600 transition-colors shadow-md ring-2 ring-white z-10">
+                  <Camera className="h-3.5 w-3.5 text-white" />
+                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (!file.type.startsWith("image/")) { toast.error("Please select an image"); return; }
+                    if (file.size > 5 * 1024 * 1024) { toast.error("Max 5MB"); return; }
+                    try {
+                      const uploaded = await mediaService.upload(file, groupId, "GROUP");
+                      await groupService.updateGroup(groupId, { profilePictureUrl: `/api/v1/media/${uploaded.mediaId}/download` });
+                      toast.success("Group photo updated!");
+                    } catch { toast.error("Upload failed"); }
+                  }} />
+                </label>
+              )}
             </div>
             <div className="flex-1 min-w-0 pb-1">
               <h1 className="text-2xl font-bold text-white drop-shadow-lg truncate">{group.name}</h1>
