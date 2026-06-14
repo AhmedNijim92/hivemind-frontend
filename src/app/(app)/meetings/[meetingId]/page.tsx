@@ -13,16 +13,10 @@ import { Avatar } from "@/components/ui/avatar";
 import { useAuthStore } from "@/store/auth-store";
 import { useCurrentUser } from "@/hooks/use-user";
 import { useMeetingParticipants } from "@/hooks/use-meetings";
+import { useRealtimeChat } from "@/hooks/use-realtime-chat";
 import { meetingService } from "@/services/meeting.service";
 import { usePageTitle } from "@/hooks/use-page-title";
 import toast from "react-hot-toast";
-
-interface ChatMessage {
-  id: string;
-  name: string;
-  text: string;
-  time: string;
-}
 
 interface FloatingReaction {
   id: string;
@@ -61,11 +55,11 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
   // UI
   const [showChat, setShowChat] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
 
   const { data: participants } = useMeetingParticipants(meetingId);
+  const { messages: chatMessages, sendMessage: sendChatMsg, userId: chatUserId } = useRealtimeChat(`meeting_${meetingId}`);
   usePageTitle(meetingData?.title ?? "Live Room");
 
   // ─── Load meeting ────────────────────────────────────────────────────────────
@@ -160,12 +154,7 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
 
   const handleSendChat = () => {
     if (!chatInput.trim()) return;
-    setChatMessages((prev) => [...prev, {
-      id: crypto.randomUUID(),
-      name: currentUser?.name ?? "You",
-      text: chatInput.trim(),
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    }]);
+    sendChatMsg(chatInput.trim());
     setChatInput("");
   };
 
@@ -444,10 +433,10 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
                 )}
                 {chatMessages.map((msg) => (
                   <motion.div key={msg.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} className="flex gap-2">
-                    <Avatar name={msg.name} size="xs" />
+                    <Avatar name={msg.senderName} size="xs" />
                     <div>
-                      <span className="text-[10px] font-semibold text-white/50">{msg.name} <span className="text-white/15 font-normal">{msg.time}</span></span>
-                      <p className="text-[12px] text-white/40 leading-relaxed">{msg.text}</p>
+                      <span className="text-[10px] font-semibold text-white/50">{msg.senderName} <span className="text-white/15 font-normal">{new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></span>
+                      <p className="text-[12px] text-white/40 leading-relaxed">{msg.content}</p>
                     </div>
                   </motion.div>
                 ))}

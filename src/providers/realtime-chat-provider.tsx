@@ -75,12 +75,18 @@ export function RealtimeChatProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     if (!userId) return;
 
-    const protocol = typeof window !== "undefined" && window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = typeof window !== "undefined" ? window.location.host : "localhost:3000";
-    const wsUrl = `${protocol}//${host}/ws/websocket`;
+    // For WebSocket, connect to the same origin on /ws path.
+    // This works when the API gateway is directly accessible (localhost:8080)
+    // or when an ingress/load balancer handles the upgrade.
+    // Falls back to polling if WebSocket connection fails.
+    const wsProtocol = typeof window !== "undefined" && window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsHost = typeof window !== "undefined" ? window.location.host : "localhost:3000";
+    const wsUrl = `${wsProtocol}//${wsHost}/ws/websocket`;
 
     let ws: WebSocket;
     let reconnectTimer: NodeJS.Timeout;
+    let retries = 0;
+    const maxRetries = 3;
     const activeConversations = useChatStore.getState().conversations;
 
     function connect() {
@@ -126,7 +132,10 @@ export function RealtimeChatProvider({ children }: { children: React.ReactNode }
 
       ws.onclose = () => {
         setConnected(false);
-        reconnectTimer = setTimeout(connect, 3000);
+        retries++;
+        if (retries < maxRetries) {
+          reconnectTimer = setTimeout(connect, 3000 * retries);
+        }
       };
 
       ws.onerror = () => ws.close();
