@@ -81,16 +81,14 @@ export function PostCard({ post, index = 0 }: PostCardProps) {
         </Link>
         <div className="flex-1 min-w-0">
           {/* Group name — which group this post belongs to */}
-          <div className="flex items-center gap-1.5">
-            <Link href={`/groups/${post.groupId}`} className="hover:underline">
-              <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-tight">{post.groupName ?? "Group"}</p>
-            </Link>
-          </div>
+          <Link href={`/groups/${post.groupId}`} className="hover:underline">
+            <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-tight">{post.groupName ?? "Group"}</p>
+          </Link>
           {/* Author + time */}
           <div className="flex items-center gap-1.5 mt-0.5">
             <Link href={`/profile/${post.authorId}`} className="hover:underline">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                {post.authorName !== "Unknown" ? post.authorName : "a member"}
+                {post.authorName && post.authorName !== "Unknown" ? post.authorName : post.groupName ?? "Group"}
               </span>
             </Link>
             <span className="text-gray-300 dark:text-gray-600 text-xs">·</span>

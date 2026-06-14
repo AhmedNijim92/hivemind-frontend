@@ -117,7 +117,7 @@ export default function ProfilePage() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
 
           {/* Cover upload button — always visible */}
-          <label className="absolute bottom-3 right-3 z-10 flex items-center gap-2 px-3 py-2 rounded-lg bg-black/50 backdrop-blur-sm text-white text-xs font-medium cursor-pointer hover:bg-black/70 transition-colors">
+          <label className="absolute bottom-14 right-3 z-20 flex items-center gap-2 px-3 py-2 rounded-lg bg-black/50 backdrop-blur-sm text-white text-xs font-medium cursor-pointer hover:bg-black/70 transition-colors shadow-lg">
             <Camera className="h-4 w-4" />
             {uploadingCover ? "Uploading…" : "Edit cover"}
             <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} disabled={uploadingCover} />
