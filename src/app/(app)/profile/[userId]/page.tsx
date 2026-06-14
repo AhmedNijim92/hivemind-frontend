@@ -2,9 +2,10 @@
 
 import { use } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowLeft, Users, Phone, Calendar, MessageCircle, Share2,
-  UserPlus, UserCheck, UserX, Clock, UserMinus,
+  UserPlus, UserCheck, UserX, Clock, UserMinus, Mail,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { TopBar } from "@/components/layout/top-bar";
@@ -45,6 +46,9 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
     else { await navigator.clipboard.writeText(url); toast.success("Link copied"); }
   };
 
+  // Only show contact info if it's your own profile or the user allows it
+  const canSeeContactInfo = isOwnProfile || (profile?.showContactInfo ?? false);
+
   if (isLoading) return <div className="max-w-2xl mx-auto px-4 py-6"><ProfileSkeleton /></div>;
   if (!profile) return (
     <div className="max-w-2xl mx-auto px-4 py-12 text-center">
@@ -58,45 +62,57 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
       <TopBar />
       <div className="max-w-2xl mx-auto">
         {/* Cover */}
-        <div className="h-40 sm:h-52 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-brand-500 to-pink-500" />
+        <div className="h-44 sm:h-56 relative overflow-hidden">
+          {profile.coverPictureUrl ? (
+            <Image src={profile.coverPictureUrl} alt="Cover" fill className="object-cover" priority />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-brand-500 to-pink-500" />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-          <motion.div animate={{ x: [0, 40, 0], y: [0, -25, 0] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }} className="absolute top-6 right-16 h-36 w-36 rounded-full bg-white/10 blur-2xl" />
-          <motion.div animate={{ x: [0, -30, 0], y: [0, 20, 0] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }} className="absolute bottom-2 left-10 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
           <Link href="/feed" className="absolute top-3 left-3 z-10 p-2 rounded-full bg-black/30 backdrop-blur-sm hover:bg-black/50 text-white transition-colors"><ArrowLeft className="h-5 w-5" /></Link>
           <button onClick={handleShare} className="absolute top-3 right-3 z-10 p-2 rounded-full bg-black/30 backdrop-blur-sm hover:bg-black/50 text-white transition-colors" aria-label="Share"><Share2 className="h-5 w-5" /></button>
         </div>
 
-        <div className="px-4 -mt-20 relative z-10 space-y-5 pb-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card p-6 backdrop-blur-sm bg-white/95 dark:bg-surface-dark-2/95">
+        <div className="px-4 -mt-16 relative z-10 space-y-5 pb-8">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card p-6 backdrop-blur-sm bg-white/95 dark:bg-surface-dark-2/95 shadow-lg border border-gray-100 dark:border-gray-800">
             <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-              <div className="-mt-16 sm:-mt-20 self-center sm:self-auto">
-                <div className="ring-4 ring-white dark:ring-surface-dark-2 rounded-full shadow-xl relative">
-                  <Avatar name={profile.name} src={profile.profilePictureUrl} size="xl" className="h-24 w-24 sm:h-28 sm:w-28 text-3xl" />
-                  <div className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-green-500 ring-2 ring-white dark:ring-surface-dark-2" />
+              {/* Avatar — fixed sizing with proper object-cover */}
+              <div className="-mt-20 sm:-mt-24 self-center sm:self-auto">
+                <div className="ring-4 ring-white dark:ring-surface-dark-2 rounded-full shadow-xl overflow-hidden h-28 w-28 sm:h-32 sm:w-32 relative">
+                  {profile.profilePictureUrl ? (
+                    <Image
+                      src={profile.profilePictureUrl}
+                      alt={profile.name}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center font-bold text-3xl text-white bg-gradient-to-br from-brand-400 to-brand-600">
+                      {profile.name?.[0]?.toUpperCase() ?? "?"}
+                    </div>
+                  )}
+                  <div className="absolute bottom-2 right-2 h-4 w-4 rounded-full bg-green-500 ring-2 ring-white dark:ring-surface-dark-2" />
                 </div>
               </div>
 
-              <div className="flex-1 text-center sm:text-left">
+              <div className="flex-1 text-center sm:text-left min-w-0">
                 <div className="flex items-center gap-2 justify-center sm:justify-start">
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{profile.name}</h1>
                   {isFriend && <Badge variant="success" className="text-[10px]"><UserCheck className="h-3 w-3" /> Friends</Badge>}
                 </div>
-                {profile.bio && <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 max-w-md">{profile.bio}</p>}
+                {profile.bio && <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 max-w-md line-clamp-2">{profile.bio}</p>}
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2 self-center sm:self-auto flex-wrap justify-center">
+              <div className="flex gap-2 self-center sm:self-auto flex-wrap justify-center flex-shrink-0">
                 {isOwnProfile ? (
                   <Link href="/profile"><Button variant="outline" size="sm">Edit profile</Button></Link>
                 ) : (
                   <>
-                    {/* Message button */}
                     <Button variant="outline" size="sm" onClick={() => startConversation(userId, profile.name, profile.profilePictureUrl)}>
                       <MessageCircle className="h-4 w-4" /> Message
                     </Button>
 
-                    {/* Friend action */}
                     {isFriend ? (
                       <Button variant="secondary" size="sm" onClick={unfriend}>
                         <UserMinus className="h-4 w-4" /> Unfriend
@@ -123,10 +139,23 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
               </div>
             </div>
 
-            {/* Meta */}
+            {/* Contact info — only visible if own profile or user allows */}
             <div className="flex flex-wrap items-center gap-2 mt-4">
-              {profile.mobileNumber && <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-full"><Phone className="h-3 w-3" />{profile.mobileNumber}</span>}
-              {profile.createdAt && <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-full"><Calendar className="h-3 w-3" />Joined {formatDate(profile.createdAt)}</span>}
+              {canSeeContactInfo && profile.email && (
+                <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2.5 py-1.5 rounded-full">
+                  <Mail className="h-3 w-3" />{profile.email}
+                </span>
+              )}
+              {canSeeContactInfo && profile.mobileNumber && (
+                <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2.5 py-1.5 rounded-full">
+                  <Phone className="h-3 w-3" />{profile.mobileNumber}
+                </span>
+              )}
+              {profile.createdAt && (
+                <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2.5 py-1.5 rounded-full">
+                  <Calendar className="h-3 w-3" />Joined {formatDate(profile.createdAt)}
+                </span>
+              )}
             </div>
 
             {/* Stats */}
@@ -150,7 +179,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
 
           {/* Groups */}
           {myGroups && myGroups.length > 0 && (
-            <div className="card overflow-hidden">
+            <div className="card overflow-hidden border border-gray-100 dark:border-gray-800">
               <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                 <h2 className="font-semibold text-gray-900 dark:text-white text-sm flex items-center gap-2">
                   <Users className="h-4 w-4 text-brand-500" /> Groups
