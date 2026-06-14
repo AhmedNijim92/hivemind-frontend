@@ -3,7 +3,6 @@
 import { use, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import Image from "next/image";
 import {
   Users, Lock, Globe, Plus, Video, ArrowLeft, UserMinus, UserPlus,
   FileText, Calendar, MessageCircle, Share2, Crown, Shield, User,
