@@ -1,11 +1,12 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Users, Lock, Globe, Plus, Video, ArrowLeft, UserMinus, UserPlus,
   FileText, Calendar, MessageCircle, Share2, Crown, Shield, User,
-  Heart, Bell, CheckCircle, XCircle, Clock, UserCheck,
+  Heart, Bell, CheckCircle, XCircle, Clock, UserCheck, Camera,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TopBar } from "@/components/layout/top-bar";
@@ -27,6 +28,7 @@ import { useGroupContextStore } from "@/store/group-context-store";
 import { useAuthStore } from "@/store/auth-store";
 import { formatNumber, timeAgo } from "@/utils/format";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { mediaService } from "@/services/media.service";
 import toast from "react-hot-toast";
 
 type Tab = "posts" | "chat" | "meetings" | "members" | "requests";
@@ -38,6 +40,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ groupId:
   const { groupId } = use(params);
   const [tab, setTab] = useState<Tab>("posts");
   const [showCreateMeeting, setShowCreateMeeting] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   const { data: group, isLoading: groupLoading } = useGroup(groupId);
   const { data: posts, isLoading: postsLoading } = useGroupPosts(groupId);
@@ -81,6 +84,19 @@ export default function GroupDetailPage({ params }: { params: Promise<{ groupId:
     else { await navigator.clipboard.writeText(url); toast.success("Link copied"); }
   };
 
+  const handleCoverUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please select an image"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("Max file size is 10MB"); return; }
+    setUploadingCover(true);
+    try {
+      await mediaService.upload(file, groupId, "GROUP");
+      toast.success("Cover photo updated!");
+    } catch { toast.error("Upload failed"); }
+    setUploadingCover(false);
+  }, [groupId]);
+
   // For private groups: handle join request vs direct join
   const handleJoinAction = () => {
     if (isPrivate) {
@@ -117,10 +133,16 @@ export default function GroupDetailPage({ params }: { params: Promise<{ groupId:
       <div className="max-w-2xl mx-auto">
         {/* Animated cover */}
         <div className="h-44 sm:h-56 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-brand-400 via-brand-600 to-purple-700" />
+          {group.coverPictureUrl ? (
+            <Image src={group.coverPictureUrl} alt="Cover" fill className="object-cover" priority />
+          ) : (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-400 via-brand-600 to-purple-700" />
+              <motion.div animate={{ x: [0, 50, 0], y: [0, -30, 0] }} transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }} className="absolute top-4 right-8 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
+              <motion.div animate={{ x: [0, -40, 0], y: [0, 25, 0] }} transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }} className="absolute bottom-0 left-4 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+            </>
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-          <motion.div animate={{ x: [0, 50, 0], y: [0, -30, 0] }} transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }} className="absolute top-4 right-8 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
-          <motion.div animate={{ x: [0, -40, 0], y: [0, 25, 0] }} transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }} className="absolute bottom-0 left-4 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
 
           <Link href="/groups" className="absolute top-3 left-3 z-10 p-2 rounded-full bg-black/30 backdrop-blur-sm hover:bg-black/50 text-white transition-colors">
             <ArrowLeft className="h-5 w-5" />
@@ -128,6 +150,20 @@ export default function GroupDetailPage({ params }: { params: Promise<{ groupId:
           <button onClick={handleShare} className="absolute top-3 right-3 z-10 p-2 rounded-full bg-black/30 backdrop-blur-sm hover:bg-black/50 text-white transition-colors" aria-label="Share">
             <Share2 className="h-5 w-5" />
           </button>
+
+          {/* Cover upload button for admins */}
+          {isAdmin && (
+            <label className="absolute bottom-3 right-3 z-10 flex items-center gap-2 px-3 py-2 rounded-lg bg-black/50 backdrop-blur-sm text-white text-xs font-medium cursor-pointer hover:bg-black/70 transition-colors">
+              <Camera className="h-4 w-4" />
+              {uploadingCover ? "Uploading…" : "Edit cover"}
+              <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} disabled={uploadingCover} />
+            </label>
+          )}
+          {uploadingCover && (
+            <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-20">
+              <div className="h-8 w-8 border-3 border-white border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
 
           {/* Group identity on cover */}
           <div className="absolute bottom-4 left-4 right-4 z-10 flex items-end gap-4">

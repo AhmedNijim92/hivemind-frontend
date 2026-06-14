@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -42,7 +42,7 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
-  const [privateInfoVisible, setPrivateInfoVisible] = useState(profile?.showContactInfo ?? false);
+  const [privateInfoVisible, setPrivateInfoVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>("groups");
   const userId = useAuthStore((s) => s.userId);
   const { data: profile, isLoading } = useCurrentUser();
@@ -52,6 +52,13 @@ export default function ProfilePage() {
   const { pending: pendingRequests, count: pendingCount, accept, reject } = usePendingFriendRequests();
   const getGroupsFollowedByUser = useGroupSocialStore((s) => s.getGroupsFollowedByUser);
   const followedGroupIds = userId ? getGroupsFollowedByUser(userId) : [];
+
+  // Sync privacy toggle with profile data when loaded
+  useEffect(() => {
+    if (profile?.showContactInfo !== undefined) {
+      setPrivateInfoVisible(profile.showContactInfo);
+    }
+  }, [profile?.showContactInfo]);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
