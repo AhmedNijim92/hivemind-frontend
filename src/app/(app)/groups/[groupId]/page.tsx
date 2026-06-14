@@ -319,7 +319,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ groupId:
                 <div className="space-y-4">
                   {postsLoading ? Array.from({ length: 2 }).map((_, i) => <PostSkeleton key={i} />) :
                     posts?.length === 0 ? <EmptyState icon={FileText} title="No posts yet" description={isMember ? "Be the first to share!" : "Join to start posting."} actionLabel={isMember ? "Create a post" : undefined} onAction={isMember ? handleCreatePost : undefined} /> :
-                    posts?.map((post) => <PostCard key={post.postId} post={post} />)}
+                    posts?.map((post) => <PostCard key={post.postId} post={{ ...post, groupName: post.groupName || group.name }} />)}
                 </div>
               )}
 
