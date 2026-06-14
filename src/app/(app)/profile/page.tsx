@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   Edit2, Check, X, Users, Camera, Mail, Phone, Calendar,
-  Settings, Heart, UserCheck, Bell, Eye, EyeOff, ImagePlus,
+  Settings, Heart, UserCheck, Bell, Eye, EyeOff,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -42,7 +42,7 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
-  const [showPrivateInfo, setShowPrivateInfo] = useState(false);
+  const [privateInfoVisible, setPrivateInfoVisible] = useState(profile?.showContactInfo ?? false);
   const [activeTab, setActiveTab] = useState<ProfileTab>("groups");
   const userId = useAuthStore((s) => s.userId);
   const { data: profile, isLoading } = useCurrentUser();
@@ -95,7 +95,7 @@ export default function ProfilePage() {
       <TopBar title="Profile" />
       <div className="max-w-2xl mx-auto">
         {/* Cover photo */}
-        <div className="h-44 sm:h-56 relative overflow-hidden group">
+        <div className="h-44 sm:h-56 relative overflow-hidden group/cover">
           {profile?.coverPictureUrl ? (
             <Image
               src={profile.coverPictureUrl}
@@ -109,9 +109,9 @@ export default function ProfilePage() {
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
 
-          {/* Cover upload button */}
-          <label className="absolute bottom-3 right-3 z-10 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/50 backdrop-blur-sm text-white text-xs font-medium cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70">
-            <ImagePlus className="h-3.5 w-3.5" />
+          {/* Cover upload button — always visible */}
+          <label className="absolute bottom-3 right-3 z-10 flex items-center gap-2 px-3 py-2 rounded-lg bg-black/50 backdrop-blur-sm text-white text-xs font-medium cursor-pointer hover:bg-black/70 transition-colors">
+            <Camera className="h-4 w-4" />
             {uploadingCover ? "Uploading…" : "Edit cover"}
             <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} disabled={uploadingCover} />
           </label>
@@ -171,48 +171,39 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Private info — hidden by default */}
+            {/* Contact info — always visible on own profile */}
             <div className="mt-4">
-              <button
-                onClick={() => setShowPrivateInfo(!showPrivateInfo)}
-                className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                aria-label={showPrivateInfo ? "Hide personal info" : "Show personal info"}
-              >
-                {showPrivateInfo ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                {showPrivateInfo ? "Hide personal info" : "Show personal info"}
-              </button>
-
-              <AnimatePresence>
-                {showPrivateInfo && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="flex flex-wrap items-center gap-2 mt-2">
-                      {profile?.email && (
-                        <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2.5 py-1.5 rounded-full">
-                          <Mail className="h-3 w-3" />{profile.email}
-                        </span>
-                      )}
-                      {profile?.mobileNumber && (
-                        <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2.5 py-1.5 rounded-full">
-                          <Phone className="h-3 w-3" />{profile.mobileNumber}
-                        </span>
-                      )}
-                    </div>
-                  </motion.div>
+              <div className="flex flex-wrap items-center gap-2">
+                {profile?.email && (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2.5 py-1.5 rounded-full">
+                    <Mail className="h-3 w-3" />{profile.email}
+                  </span>
                 )}
-              </AnimatePresence>
+                {profile?.mobileNumber && (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2.5 py-1.5 rounded-full">
+                    <Phone className="h-3 w-3" />{profile.mobileNumber}
+                  </span>
+                )}
+                {profile?.createdAt && (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2.5 py-1.5 rounded-full">
+                    <Calendar className="h-3 w-3" />Joined {formatDate(profile.createdAt)}
+                  </span>
+                )}
+              </div>
 
-              {/* Always-visible: joined date */}
-              {profile?.createdAt && (
-                <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-400">
-                  <Calendar className="h-3 w-3" />
-                  Joined {formatDate(profile.createdAt)}
-                </div>
-              )}
+              {/* Privacy toggle — controls if others can see phone/email */}
+              <button
+                onClick={async () => {
+                  const newVal = !privateInfoVisible;
+                  setPrivateInfoVisible(newVal);
+                  await updateProfile.mutateAsync({ showContactInfo: newVal });
+                  toast.success(newVal ? "Contact info visible to others" : "Contact info hidden from others");
+                }}
+                className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mt-2"
+              >
+                {privateInfoVisible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                {privateInfoVisible ? "Others can see your contact info" : "Contact info hidden from others"}
+              </button>
             </div>
 
             {/* Stats */}

@@ -8,6 +8,7 @@ export interface UserProfileDto {
   bio: string | null;
   profilePictureUrl: string | null;
   coverPictureUrl: string | null;
+  showContactInfo: boolean;
   createdAt: string; // LocalDate → ISO string
 }
 
@@ -17,6 +18,7 @@ export interface UpdateProfileRequest {
   bio?: string;
   profilePictureUrl?: string;
   coverPictureUrl?: string;
+  showContactInfo?: boolean;
 }
 
 export interface FollowResponse {
