@@ -29,6 +29,7 @@ import { useAuthStore } from "@/store/auth-store";
 import { formatNumber, timeAgo } from "@/utils/format";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { mediaService } from "@/services/media.service";
+import { groupService } from "@/services/group.service";
 import toast from "react-hot-toast";
 
 type Tab = "posts" | "chat" | "meetings" | "members" | "requests";
@@ -91,7 +92,9 @@ export default function GroupDetailPage({ params }: { params: Promise<{ groupId:
     if (file.size > 10 * 1024 * 1024) { toast.error("Max file size is 10MB"); return; }
     setUploadingCover(true);
     try {
-      await mediaService.upload(file, groupId, "GROUP");
+      const uploaded = await mediaService.upload(file, groupId, "GROUP");
+      const coverUrl = `/api/v1/media/${uploaded.mediaId}/download`;
+      await groupService.updateGroup(groupId, { coverPictureUrl: coverUrl });
       toast.success("Cover photo updated!");
     } catch { toast.error("Upload failed"); }
     setUploadingCover(false);

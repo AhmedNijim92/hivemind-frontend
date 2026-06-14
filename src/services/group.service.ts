@@ -12,6 +12,11 @@ export const groupService = {
     return res.data;
   },
 
+  updateGroup: async (groupId: string, data: { name?: string; description?: string; profilePictureUrl?: string; coverPictureUrl?: string }): Promise<GroupDto> => {
+    const res = await apiClient.put<GroupDto>(`/api/v1/groups/${groupId}`, data);
+    return res.data;
+  },
+
   getMyGroups: async (): Promise<GroupDto[]> => {
     const res = await apiClient.get<GroupDto[]>("/api/v1/groups/my");
     return res.data;

@@ -10,6 +10,7 @@ export interface GroupDto {
   description: string | null;
   privacy: GroupPrivacy;
   memberCount: number;
+  profilePictureUrl?: string | null;
   coverPictureUrl?: string | null;
   createdAt: string; // LocalDateTime → ISO string
 }
