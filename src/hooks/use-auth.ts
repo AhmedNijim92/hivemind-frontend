@@ -27,7 +27,7 @@ export function useSignin() {
     onSuccess: (data) => {
       setAuth(data);
       toast.success("Welcome back!");
-      router.push("/feed");
+      router.push("/select-group");
     },
     onError: (err: { message: string }) =>
       toast.error(err.message ?? "Invalid OTP"),
