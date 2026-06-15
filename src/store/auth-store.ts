@@ -11,6 +11,7 @@ interface AuthStore {
   token: string | null;
   userId: string | null;
   role: string | null;
+  name: string | null;
   isAuthenticated: boolean;
 
   setAuth: (response: JwtAuthResponse) => void;
@@ -23,6 +24,7 @@ export const useAuthStore = create<AuthStore>()(
       token: null,
       userId: null,
       role: null,
+      name: null,
       isAuthenticated: false,
 
       setAuth: (response: JwtAuthResponse) =>
@@ -30,6 +32,7 @@ export const useAuthStore = create<AuthStore>()(
           token: response.token,
           userId: response.userId,
           role: response.role,
+          name: response.name ?? null,
           isAuthenticated: true,
         }),
 
@@ -38,6 +41,7 @@ export const useAuthStore = create<AuthStore>()(
           token: null,
           userId: null,
           role: null,
+          name: null,
           isAuthenticated: false,
         }),
     }),

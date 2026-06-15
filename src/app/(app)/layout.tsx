@@ -11,9 +11,11 @@ import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { CreatePostModal } from "@/features/posts/create-post-modal";
 import { CreateGroupModal } from "@/features/groups/create-group-modal";
 import { useUIStore } from "@/store/ui-store";
+import { useTokenExpiry } from "@/hooks/use-token-expiry";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isSearchOpen, openSearch, closeSearch } = useUIStore();
+  useTokenExpiry();
 
   // Global keyboard shortcut: Cmd/Ctrl + K to open search
   useEffect(() => {

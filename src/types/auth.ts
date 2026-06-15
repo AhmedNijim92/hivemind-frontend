@@ -23,6 +23,7 @@ export interface JwtAuthResponse {
   token: string;
   userId: string; // UUID as string
   role: "USER" | "ADMIN" | "SUPER_ADMIN";
+  name: string;
 }
 
 // Decoded JWT payload shape (for client-side use)
@@ -31,6 +32,7 @@ export interface JwtPayload {
   userId: string;
   role: string;
   email: string;
+  name: string;
   exp: number;
   iat: number;
 }
