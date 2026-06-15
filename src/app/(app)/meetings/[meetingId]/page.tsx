@@ -13,7 +13,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { useAuthStore } from "@/store/auth-store";
 import { useCurrentUser } from "@/hooks/use-user";
 import { useMeetingParticipants } from "@/hooks/use-meetings";
-import { useRealtimeChat } from "@/hooks/use-realtime-chat";
+import { useMessages, useSendMessage } from "@/hooks/use-chat";
 import { meetingService } from "@/services/meeting.service";
 import { usePageTitle } from "@/hooks/use-page-title";
 import toast from "react-hot-toast";
@@ -59,7 +59,9 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
   const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
 
   const { data: participants } = useMeetingParticipants(meetingId);
-  const { messages: chatMessages, sendMessage: sendChatMsg, userId: chatUserId } = useRealtimeChat(`meeting_${meetingId}`);
+  const chatConversationId = `meeting_${meetingId}`;
+  const chatMessages = useMessages(chatConversationId);
+  const sendChatMsg = useSendMessage();
   usePageTitle(meetingData?.title ?? "Live Room");
 
   // ─── Load meeting ────────────────────────────────────────────────────────────
@@ -154,7 +156,7 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
 
   const handleSendChat = () => {
     if (!chatInput.trim()) return;
-    sendChatMsg(chatInput.trim());
+    sendChatMsg(chatConversationId, currentUser?.name ?? "User", chatInput.trim());
     setChatInput("");
   };
 
@@ -435,7 +437,7 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
                   <motion.div key={msg.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} className="flex gap-2">
                     <Avatar name={msg.senderName} size="xs" />
                     <div>
-                      <span className="text-[10px] font-semibold text-white/50">{msg.senderName} <span className="text-white/15 font-normal">{new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></span>
+                      <span className="text-[10px] font-semibold text-white/50">{msg.senderName} <span className="text-white/15 font-normal">{new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></span>
                       <p className="text-[12px] text-white/40 leading-relaxed">{msg.content}</p>
                     </div>
                   </motion.div>

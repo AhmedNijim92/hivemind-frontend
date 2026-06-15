@@ -103,19 +103,22 @@ export function RealtimeChatProvider({ children }: { children: React.ReactNode }
 
         if (frame.command === "CONNECTED") {
           setConnected(true);
+          // Collect pre-existing callbacks (meeting room subs etc) before adding conversation subs
+          const existingDests = new Set(callbacksRef.current.keys());
+
           // Auto-subscribe to all user's conversations
           activeConversations.forEach((conv) => {
-            subIdRef.current++;
             const dest = `/topic/chat/${conv.id}`;
-            callbacksRef.current.set(dest, (msg: any) => {
-              // Don't add own messages (already added locally)
-              if (msg.senderId === userId) return;
-              const store = useChatStore.getState();
-              store.sendMessage(conv.id, msg.senderId, msg.senderName, msg.content, msg.imageUrl);
-            });
-            ws.send(encodeFrame("SUBSCRIBE", { id: `sub-${subIdRef.current}`, destination: dest }));
+            if (!existingDests.has(dest)) {
+              callbacksRef.current.set(dest, (msg: any) => {
+                if (msg.senderId === userId) return;
+                const store = useChatStore.getState();
+                store.sendMessage(conv.id, msg.senderId, msg.senderName, msg.content, msg.imageUrl);
+              });
+            }
           });
-          // Re-subscribe other callbacks
+
+          // Subscribe ALL destinations (conversations + other topics) in one pass
           callbacksRef.current.forEach((_, dest) => {
             subIdRef.current++;
             ws.send(encodeFrame("SUBSCRIBE", { id: `sub-${subIdRef.current}`, destination: dest }));
