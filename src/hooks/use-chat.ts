@@ -20,24 +20,24 @@ export function useConversations() {
   }, [userId, conversations]);
 }
 
-/** Returns messages for a specific conversation — polls server every 2s */
+/** Returns messages for a specific conversation — polls server when active */
 export function useMessages(conversationId: string) {
   const userId = useAuthStore((s) => s.userId);
   const localMessages = useChatStore((s) => s.messages[conversationId] ?? []);
 
-  // Poll server for messages
+  // Poll server for messages — only when this hook is mounted (user is viewing this chat)
   const { data: serverMessages } = useQuery({
     queryKey: ["chat", "messages", conversationId],
     queryFn: () => chatService.getMessages(conversationId),
     enabled: !!conversationId && !!userId,
-    refetchInterval: 2000,
-    staleTime: 1000,
+    refetchInterval: 5000, // Poll every 5 seconds (only when component is mounted)
+    staleTime: 4000, // Data considered fresh for 4s
+    refetchOnWindowFocus: false, // Don't refetch on tab switch
   });
 
   // Merge: prefer server messages if available, fall back to local
   return useMemo(() => {
     if (serverMessages && serverMessages.length > 0) {
-      // Convert server format to local ChatMessage format
       return serverMessages.map((m): ChatMessage => ({
         id: m.id,
         conversationId: m.conversationId,
