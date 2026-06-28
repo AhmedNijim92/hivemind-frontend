@@ -15,7 +15,8 @@ import { useSendOtp, useSignin } from "@/hooks/use-auth";
 const phoneSchema = z.object({
   mobileNumber: z
     .string()
-    .regex(/^\+[1-9]\d{1,14}$/, "Enter a valid phone number (e.g. +1234567890)"),
+    .transform((val) => val.replace(/[\s\-\(\)]/g, "")) // Strip spaces, dashes, parens
+    .pipe(z.string().regex(/^\+[1-9]\d{7,14}$/, "Enter your number with country code (e.g. +46707518829)")),
 });
 
 const otpSchema = z.object({
@@ -85,7 +86,7 @@ export function LoginForm() {
             <form onSubmit={phoneForm.handleSubmit(onSendOtp)} className="space-y-5">
               <Input
                 label="Mobile number"
-                placeholder="+1 234 567 8900"
+                placeholder="+46707518829"
                 type="tel"
                 autoComplete="tel"
                 icon={<Phone className="h-4 w-4" />}

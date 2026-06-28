@@ -15,7 +15,8 @@ const infoSchema = z.object({
   email: z.string().email("Enter a valid email"),
   mobileNumber: z
     .string()
-    .regex(/^\+[1-9]\d{1,14}$/, "Enter a valid phone number (e.g. +46701234567)"),
+    .transform((val) => val.replace(/[\s\-\(\)]/g, ""))
+    .pipe(z.string().regex(/^\+[1-9]\d{7,14}$/, "Enter your number with country code (e.g. +46707518829)")),
 });
 
 type InfoForm = z.infer<typeof infoSchema>;
@@ -95,7 +96,7 @@ export function RegisterForm() {
               <Input
                 label="Mobile number"
                 type="tel"
-                placeholder="+46 70 123 4567"
+                placeholder="+46707518829"
                 autoComplete="tel"
                 icon={<Phone className="h-4 w-4" />}
                 hint="We'll send a verification code"
