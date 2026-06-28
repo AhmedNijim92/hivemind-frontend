@@ -10,20 +10,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useSendOtp, useCreateUser } from "@/hooks/use-auth";
 
-// ─── Schemas ─────────────────────────────────────────────────────────────────
-
 const infoSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Enter a valid email"),
   mobileNumber: z
     .string()
-    .regex(/^\+[1-9]\d{1,14}$/, "Enter a valid phone number (e.g. +1234567890)"),
+    .regex(/^\+[1-9]\d{1,14}$/, "Enter a valid phone number (e.g. +46701234567)"),
 });
 
 type InfoForm = z.infer<typeof infoSchema>;
-type Step = "info" | "verify";
-
-// ─── Component ───────────────────────────────────────────────────────────────
+type Step = "info" | "otp";
 
 export function RegisterForm() {
   const [step, setStep] = useState<Step>("info");
@@ -38,10 +34,9 @@ export function RegisterForm() {
   });
 
   const onSubmitInfo = async (data: InfoForm) => {
-    // Send OTP to verify phone number before creating account
     await sendOtp.mutateAsync({ mobileNumber: data.mobileNumber });
     setFormData(data);
-    setStep("verify");
+    setStep("otp");
   };
 
   const onCreateAccount = () => {
@@ -51,35 +46,30 @@ export function RegisterForm() {
 
   return (
     <div className="w-full max-w-sm mx-auto">
-      {/* Progress indicator */}
+      {/* Progress */}
       <div className="flex items-center gap-2 mb-8">
-        <div className={`h-1 flex-1 rounded-full transition-colors ${step === "info" ? "bg-brand-500" : "bg-brand-500"}`} />
-        <div className={`h-1 flex-1 rounded-full transition-colors ${step === "verify" ? "bg-brand-500" : "bg-gray-200 dark:bg-gray-700"}`} />
+        <div className="h-1 flex-1 rounded-full bg-brand-500" />
+        <div className={`h-1 flex-1 rounded-full transition-colors ${step === "otp" ? "bg-brand-500" : "bg-gray-200 dark:bg-gray-700"}`} />
       </div>
 
       <AnimatePresence mode="wait">
         {step === "info" ? (
           <motion.div
             key="info"
-            initial={{ opacity: 0, x: -30, filter: "blur(4px)" }}
-            animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, x: -30, filter: "blur(4px)" }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.25 }}
           >
             <div className="mb-8">
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.1, type: "spring", stiffness: 400, damping: 20 }}
-                className="h-14 w-14 rounded-2xl bg-gradient-brand flex items-center justify-center mb-5 shadow-lg shadow-brand-500/25"
-              >
+              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center mb-5 shadow-lg shadow-brand-500/25">
                 <UserPlus className="h-7 w-7 text-white" />
-              </motion.div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-display">
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                 Join HiveMind
               </h1>
-              <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm leading-relaxed">
-                Create your account to connect through groups. No passwords — we&apos;ll verify your phone.
+              <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm">
+                Create your account. No passwords — just your phone.
               </p>
             </div>
 
@@ -104,90 +94,68 @@ export function RegisterForm() {
               <Input
                 label="Mobile number"
                 type="tel"
-                placeholder="+1 234 567 8900"
+                placeholder="+46 70 123 4567"
                 autoComplete="tel"
                 icon={<Phone className="h-4 w-4" />}
-                hint="We'll send a verification code to this number"
+                hint="We'll send a verification code"
                 error={infoForm.formState.errors.mobileNumber?.message}
                 {...infoForm.register("mobileNumber")}
               />
-              <Button
-                type="submit"
-                variant="gradient"
-                className="w-full"
-                loading={sendOtp.isPending}
-              >
-                Continue
-                <ArrowRight className="h-4 w-4" />
+              <Button type="submit" className="w-full" loading={sendOtp.isPending}>
+                Continue <ArrowRight className="h-4 w-4" />
               </Button>
             </form>
-
-            <p className="mt-6 text-[11px] text-gray-400 text-center leading-relaxed">
-              By creating an account, you agree to HiveMind&apos;s Terms of Service and Privacy Policy.
-            </p>
           </motion.div>
         ) : (
           <motion.div
-            key="verify"
-            initial={{ opacity: 0, x: 30, filter: "blur(4px)" }}
-            animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, x: 30, filter: "blur(4px)" }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            key="otp"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.25 }}
           >
             <div className="mb-8">
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.1, type: "spring", stiffness: 400, damping: 20 }}
-                className="h-14 w-14 rounded-2xl bg-gradient-brand flex items-center justify-center mb-5 shadow-lg shadow-brand-500/25"
-              >
+              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center mb-5 shadow-lg shadow-brand-500/25">
                 <KeyRound className="h-7 w-7 text-white" />
-              </motion.div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-display">
-                Verify your phone
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Verify your number
               </h1>
-              <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm leading-relaxed">
-                We sent a 6-digit code to{" "}
-                <span className="font-semibold text-gray-700 dark:text-gray-200">
-                  {formData?.mobileNumber}
-                </span>
+              <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm">
+                Enter the 6-digit code sent to{" "}
+                <span className="font-semibold text-gray-700 dark:text-gray-200">{formData?.mobileNumber}</span>
               </p>
             </div>
 
-            {/* Account preview card */}
-            <div className="mb-6 p-4 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/[0.05]">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">{formData?.name?.[0]?.toUpperCase()}</span>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{formData?.name}</p>
-                  <p className="text-xs text-gray-400">{formData?.email}</p>
-                </div>
+            {/* Preview card */}
+            <div className="mb-5 p-3 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/[0.05] flex items-center gap-3">
+              <div className="h-9 w-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center">
+                <span className="text-white font-bold text-sm">{formData?.name?.[0]?.toUpperCase()}</span>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">{formData?.name}</p>
+                <p className="text-[11px] text-gray-400">{formData?.email}</p>
               </div>
             </div>
 
             <div className="space-y-4">
-              <p className="text-center text-sm text-gray-500">
-                Tap below to verify and create your account
+              <p className="text-xs text-center text-gray-400">
+                Check your SMS for the verification code, then tap Create Account
               </p>
               <Button
-                variant="gradient"
                 className="w-full"
                 onClick={onCreateAccount}
                 loading={createUser.isPending}
               >
-                <Sparkles className="h-4 w-4" />
-                Create my account
+                <Sparkles className="h-4 w-4" /> Create Account
               </Button>
-              <motion.button
-                whileHover={{ x: -4 }}
+              <button
                 type="button"
                 onClick={() => setStep("info")}
-                className="w-full text-sm text-gray-500 hover:text-brand-500 transition-colors py-2"
+                className="w-full text-sm text-gray-400 hover:text-brand-500 transition-colors py-2"
               >
-                ← Back to edit details
-              </motion.button>
+                ← Back
+              </button>
             </div>
           </motion.div>
         )}
