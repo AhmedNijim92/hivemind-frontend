@@ -139,18 +139,21 @@ export function LoginForm() {
             </div>
 
             <form onSubmit={otpForm.handleSubmit(onVerifyOtp)} className="space-y-5">
-              <Input
-                label="One-time password"
-                placeholder="000000"
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                autoComplete="one-time-code"
-                icon={<Sparkles className="h-4 w-4" />}
-                error={otpForm.formState.errors.otp?.message}
-                {...otpForm.register("otp")}
-                className="text-center text-2xl tracking-[0.5em] font-mono"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">One-time password</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  autoComplete="one-time-code"
+                  placeholder="000000"
+                  {...otpForm.register("otp")}
+                  className="w-full text-center text-2xl tracking-[0.4em] font-mono px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-white/[0.03] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500"
+                />
+                {otpForm.formState.errors.otp?.message && (
+                  <p className="text-red-500 text-xs mt-1">{otpForm.formState.errors.otp.message}</p>
+                )}
+              </div>
               <Button
                 type="submit"
                 variant="gradient"
