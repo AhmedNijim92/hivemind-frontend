@@ -24,6 +24,7 @@ type Step = "info" | "otp";
 export function RegisterForm() {
   const [step, setStep] = useState<Step>("info");
   const [formData, setFormData] = useState<InfoForm | null>(null);
+  const [otpCode, setOtpCode] = useState("");
 
   const sendOtp = useSendOtp();
   const createUser = useCreateUser();
@@ -139,13 +140,23 @@ export function RegisterForm() {
             </div>
 
             <div className="space-y-4">
-              <p className="text-xs text-center text-gray-400">
-                Check your SMS for the verification code, then tap Create Account
-              </p>
+              <Input
+                label="Verification code"
+                placeholder="000000"
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                autoComplete="one-time-code"
+                icon={<Sparkles className="h-4 w-4" />}
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                className="text-center text-2xl tracking-[0.4em] font-mono"
+              />
               <Button
                 className="w-full"
                 onClick={onCreateAccount}
                 loading={createUser.isPending}
+                disabled={otpCode.length !== 6}
               >
                 <Sparkles className="h-4 w-4" /> Create Account
               </Button>
