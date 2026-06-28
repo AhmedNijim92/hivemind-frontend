@@ -15,8 +15,10 @@ const infoSchema = z.object({
   email: z.string().email("Enter a valid email"),
   mobileNumber: z
     .string()
-    .transform((val) => val.replace(/[\s\-\(\)]/g, ""))
-    .pipe(z.string().regex(/^\+[1-9]\d{7,14}$/, "Enter your number with country code (e.g. +46707518829)")),
+    .min(8, "Enter your number with country code (e.g. +46707518829)")
+    .refine((val) => /^\+[1-9]\d{7,14}$/.test(val.replace(/[\s\-\(\)]/g, "")), {
+      message: "Enter a valid phone number (e.g. +46707518829)",
+    }),
 });
 
 type InfoForm = z.infer<typeof infoSchema>;
@@ -36,8 +38,13 @@ export function RegisterForm() {
   });
 
   const onSubmitInfo = async (data: InfoForm) => {
-    await sendOtp.mutateAsync({ mobileNumber: data.mobileNumber });
-    setFormData(data);
+    const cleanNumber = data.mobileNumber.replace(/[\s\-\(\)]/g, "");
+    try {
+      await sendOtp.mutateAsync({ mobileNumber: cleanNumber });
+    } catch {
+      // Error shown via toast
+    }
+    setFormData({ ...data, mobileNumber: cleanNumber });
     setStep("otp");
   };
 

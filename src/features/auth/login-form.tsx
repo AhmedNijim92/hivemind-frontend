@@ -15,8 +15,10 @@ import { useSendOtp, useSignin } from "@/hooks/use-auth";
 const phoneSchema = z.object({
   mobileNumber: z
     .string()
-    .transform((val) => val.replace(/[\s\-\(\)]/g, "")) // Strip spaces, dashes, parens
-    .pipe(z.string().regex(/^\+[1-9]\d{7,14}$/, "Enter your number with country code (e.g. +46707518829)")),
+    .min(8, "Enter your number with country code (e.g. +46707518829)")
+    .refine((val) => /^\+[1-9]\d{7,14}$/.test(val.replace(/[\s\-\(\)]/g, "")), {
+      message: "Enter a valid phone number (e.g. +46707518829)",
+    }),
 });
 
 const otpSchema = z.object({
@@ -46,8 +48,12 @@ export function LoginForm() {
   });
 
   const onSendOtp = async (data: PhoneForm) => {
-    await sendOtp.mutateAsync({ mobileNumber: data.mobileNumber });
-    setMobileNumber(data.mobileNumber);
+    try {
+      await sendOtp.mutateAsync({ mobileNumber: data.mobileNumber.replace(/[\s\-\(\)]/g, "") });
+    } catch {
+      // Error already shown via toast in hook
+    }
+    setMobileNumber(data.mobileNumber.replace(/[\s\-\(\)]/g, ""));
     setStep("otp");
   };
 
