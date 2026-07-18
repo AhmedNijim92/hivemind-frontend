@@ -92,7 +92,7 @@ export function CreatePostModal() {
 
     reset();
     removeMedia();
-    closeCreatePost();
+    setTimeout(() => closeCreatePost(), 50);
   };
 
   const handleClose = () => {

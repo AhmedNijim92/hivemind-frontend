@@ -32,11 +32,11 @@ export function CreateGroupModal() {
 
   const onSubmit = async (data: FormData) => {
     const newGroup = await createGroup.mutateAsync(data);
-    // Set the newly created group as the active context
     setActiveGroup(newGroup);
     reset();
     closeCreateGroup();
-    router.push("/feed");
+    // Use replace + setTimeout to avoid freeze from simultaneous modal close + navigation
+    setTimeout(() => router.replace("/feed"), 100);
   };
 
   return (
