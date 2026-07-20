@@ -1,6 +1,6 @@
 /**
  * Story store — persisted to localStorage.
- * Stories are client-side only (no backend API).
+ * Stories are group-based: posted by members on behalf of their group.
  * Each story expires 24 hours after creation.
  */
 import { create } from "zustand";
@@ -44,52 +44,42 @@ export const useStoryStore = create<StoryStore>()(
         const { stories } = get();
         const now = Date.now();
 
-        // Filter out expired stories
+        // Filter expired
         const active = stories.filter(
           (s) => new Date(s.expiresAt).getTime() > now
         );
 
-        // Group by userId
+        // Group by groupId (stories belong to groups, not individual users)
         const map = new Map<string, Story[]>();
         for (const story of active) {
-          const existing = map.get(story.userId) ?? [];
+          const key = story.groupId;
+          const existing = map.get(key) ?? [];
           existing.push(story);
-          map.set(story.userId, existing);
+          map.set(key, existing);
         }
 
         // Build StoryGroup array
         const groups: StoryGroup[] = [];
-        for (const [userId, userStories] of map) {
-          // Sort stories oldest-first within each group
-          const sorted = [...userStories].sort(
-            (a, b) =>
-              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        for (const [groupId, groupStories] of map) {
+          const sorted = [...groupStories].sort(
+            (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
           );
           const first = sorted[0];
           groups.push({
-            userId,
-            userName: first.userName,
-            userAvatar: first.userAvatar,
+            groupId,
+            groupName: first.groupName,
+            groupAvatar: null,
             stories: sorted,
-            hasUnviewed: sorted.some(
-              (s) => !s.viewedBy.includes(currentUserId)
-            ),
+            hasUnviewed: sorted.some((s) => !s.viewedBy.includes(currentUserId)),
           });
         }
 
-        // Sort: current user first, then unviewed groups, then viewed
+        // Sort: unviewed first, then by recency
         groups.sort((a, b) => {
-          if (a.userId === currentUserId) return -1;
-          if (b.userId === currentUserId) return 1;
           if (a.hasUnviewed && !b.hasUnviewed) return -1;
           if (!a.hasUnviewed && b.hasUnviewed) return 1;
-          // Most recent story first among same-status groups
-          const aLatest = new Date(
-            a.stories[a.stories.length - 1].createdAt
-          ).getTime();
-          const bLatest = new Date(
-            b.stories[b.stories.length - 1].createdAt
-          ).getTime();
+          const aLatest = new Date(a.stories[a.stories.length - 1].createdAt).getTime();
+          const bLatest = new Date(b.stories[b.stories.length - 1].createdAt).getTime();
           return bLatest - aLatest;
         });
 

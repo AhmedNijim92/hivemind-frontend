@@ -1,7 +1,9 @@
-// ─── Stories (client-side only) ───────────────────────────────────────────────
+// ─── Stories (group-based, similar to posts) ──────────────────────────────────
 
 export interface Story {
   id: string;
+  groupId: string;
+  groupName: string;
   userId: string;
   userName: string;
   userAvatar: string | null;
@@ -13,9 +15,9 @@ export interface Story {
 }
 
 export interface StoryGroup {
-  userId: string;
-  userName: string;
-  userAvatar: string | null;
+  groupId: string;
+  groupName: string;
+  groupAvatar: string | null;
   stories: Story[];
   hasUnviewed: boolean;
 }

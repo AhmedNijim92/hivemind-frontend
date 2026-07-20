@@ -32,7 +32,7 @@ export function PostCard({ post, index = 0 }: PostCardProps) {
     setLiked(true);
     likePost.mutate(
       { groupId: post.groupId, postId: post.postId },
-      { onError: () => { setLiked(false); toast.error("Failed to like"); } }
+      { onError: () => { setLiked(false); toast.error("You already liked this post"); } }
     );
   }, [liked, likePost, post.groupId, post.postId]);
 
