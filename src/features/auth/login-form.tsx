@@ -124,7 +124,7 @@ export function LoginForm() {
       <form onSubmit={phoneForm.handleSubmit(onSendOtp)} className="space-y-4">
         <Input
           label="Mobile number"
-          placeholder="+46707518829"
+          placeholder="+1 555 000 0000"
           type="tel"
           autoComplete="tel"
           icon={<Phone className="h-4 w-4" />}

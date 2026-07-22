@@ -139,7 +139,7 @@ export function RegisterForm() {
         <Input
           label="Mobile number"
           type="tel"
-          placeholder="+46707518829"
+          placeholder="+1 555 000 0000"
           autoComplete="tel"
           icon={<Phone className="h-4 w-4" />}
           error={infoForm.formState.errors.mobileNumber?.message}
