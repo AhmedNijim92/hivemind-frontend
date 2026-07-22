@@ -5,7 +5,6 @@ import { TopBar } from "@/components/layout/top-bar";
 import { NotificationItem } from "@/features/notifications/notification-item";
 import { NotificationSkeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Button } from "@/components/ui/button";
 import {
   useNotifications,
   useMarkAllAsRead,
@@ -22,32 +21,30 @@ export default function NotificationsPage() {
   return (
     <>
       <TopBar title="Notifications" />
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="max-w-2xl mx-auto px-4 py-5">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Notifications
-            </h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white hidden lg:block">Notifications</h1>
             {unreadCount && unreadCount > 0 ? (
-              <p className="text-sm text-gray-500 mt-0.5">
-                {unreadCount} unread
-              </p>
-            ) : null}
+              <p className="text-sm text-gray-400 mt-0.5">{unreadCount} unread</p>
+            ) : (
+              <p className="text-sm text-gray-400 mt-0.5 hidden lg:block">You&apos;re all caught up</p>
+            )}
           </div>
           {unreadCount && unreadCount > 0 ? (
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={() => markAllAsRead.mutate()}
-              loading={markAllAsRead.isPending}
+              disabled={markAllAsRead.isPending}
+              className="flex items-center gap-1.5 text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 transition-colors"
             >
-              <CheckCheck className="h-4 w-4" />
+              <CheckCheck className="h-3.5 w-3.5" />
               Mark all read
-            </Button>
+            </button>
           ) : null}
         </div>
 
-        <div className="card divide-y divide-gray-100 dark:divide-gray-800">
+        <div className="space-y-2">
           {isLoading ? (
             Array.from({ length: 5 }).map((_, i) => (
               <NotificationSkeleton key={i} />
@@ -56,7 +53,7 @@ export default function NotificationsPage() {
             <EmptyState
               icon={Bell}
               title="You're all caught up!"
-              description="New notifications will appear here when someone interacts with your content."
+              description="New notifications will appear here."
             />
           ) : (
             notifications?.map((n) => (

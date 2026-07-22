@@ -173,7 +173,21 @@ export default function FeedPage() {
               <FeedContent />
             </motion.div>
           ) : (
-            <EmptyState icon={Rss} title="No group selected" description="Please select a group to view posts." />
+            <div className="text-center py-16 space-y-4">
+              <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-brand-100 to-purple-100 dark:from-brand-950/30 dark:to-purple-950/20 flex items-center justify-center mx-auto">
+                <Rss className="h-10 w-10 text-brand-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">No group selected</h3>
+                <p className="text-sm text-gray-400 mt-1">Select a group to see posts from your community</p>
+              </div>
+              <button
+                onClick={() => router.push("/select-group")}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium transition-colors"
+              >
+                <Users className="h-4 w-4" /> Select a Group
+              </button>
+            </div>
           )}
         </AnimatePresence>
       </div>

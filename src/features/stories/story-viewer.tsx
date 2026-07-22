@@ -36,7 +36,7 @@ export function StoryViewer({ groups, initialGroupIndex, onClose }: StoryViewerP
 
   const currentGroup = groups[groupIndex];
   const currentStory = currentGroup?.stories[storyIndex];
-  const isOwnStory = currentGroup?.userId === userId;
+  const isOwnStory = currentGroup?.stories.some(s => s.userId === userId);
   const viewCount = currentStory?.viewedBy?.length ?? 0;
 
   useEffect(() => { if (currentStory) markViewed(currentStory.id); }, [currentStory, markViewed]);
@@ -91,7 +91,7 @@ export function StoryViewer({ groups, initialGroupIndex, onClose }: StoryViewerP
 
   const handleSendReply = () => {
     if (!reply.trim()) return;
-    toast.success(`Reply sent to ${currentGroup?.userName}`);
+    toast.success(`Reply sent to ${currentGroup?.groupName}`);
     setReply("");
     setShowReplyInput(false);
   };
@@ -147,9 +147,9 @@ export function StoryViewer({ groups, initialGroupIndex, onClose }: StoryViewerP
 
           {/* Header */}
           <div className="absolute top-7 left-0 right-0 z-10 flex items-center gap-3 px-4">
-            <Avatar name={currentGroup.userName} size="sm" src={currentGroup.userAvatar} />
+            <Avatar name={currentGroup.groupName} size="sm" src={currentGroup.groupAvatar} />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{currentGroup.userName}</p>
+              <p className="text-sm font-semibold text-white truncate">{currentGroup.groupName}</p>
               <p className="text-[11px] text-white/60">{timeAgo(currentStory.createdAt)}</p>
             </div>
             {/* View count for own stories */}
@@ -181,7 +181,7 @@ export function StoryViewer({ groups, initialGroupIndex, onClose }: StoryViewerP
                     value={reply}
                     onChange={(e) => setReply(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") handleSendReply(); if (e.key === "Escape") setShowReplyInput(false); }}
-                    placeholder={`Reply to ${currentGroup.userName}…`}
+                    placeholder={`Reply to ${currentGroup.groupName}…`}
                     className="flex-1 bg-white/10 backdrop-blur-md text-white placeholder:text-white/50 rounded-full px-4 py-2.5 text-sm outline-none border border-white/20 focus:border-white/40"
                     autoFocus
                     onClick={(e) => e.stopPropagation()}

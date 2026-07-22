@@ -41,7 +41,7 @@ export default function ChatPage() {
       <div className="max-w-2xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Messages</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white hidden lg:block">Messages</h1>
           <Button size="sm" onClick={() => setIsNewChatOpen(true)}>
             <Plus className="h-4 w-4" /> New
           </Button>

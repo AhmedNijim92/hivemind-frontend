@@ -32,8 +32,8 @@ export default function GroupsPage() {
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Groups</h1>
-            <p className="text-gray-400 text-sm mt-0.5">{allGroups.length} group{allGroups.length !== 1 ? "s" : ""} you belong to</p>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white hidden lg:block">Groups</h1>
+            <p className="text-gray-400 text-sm hidden lg:block mt-0.5">{allGroups.length} group{allGroups.length !== 1 ? "s" : ""}</p>
           </div>
           {!hasOwnedGroup && (
             <Button onClick={openCreateGroup} size="sm">

@@ -23,11 +23,12 @@ export function MobileNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-30 lg:hidden glass border-t border-white/[0.06] safe-area-pb"
+      className="fixed bottom-0 left-0 right-0 z-30 lg:hidden bg-white/95 dark:bg-[#0f0f13]/95 backdrop-blur-xl border-t border-gray-100 dark:border-white/[0.04] safe-area-pb"
       role="navigation"
       aria-label="Main navigation"
+      style={{ touchAction: "manipulation" }}
     >
-      <div className="flex items-center justify-around px-2 py-2">
+      <div className="flex items-center justify-around px-1 py-1.5">
         {navItems.map(({ href, icon: Icon, label }) => {
           const isActive = pathname === href || pathname.startsWith(href + "/");
           const badgeCount =
@@ -67,14 +68,12 @@ export function MobileNav() {
                   <Icon className="h-5 w-5" aria-hidden="true" />
                 </motion.div>
                 {badgeCount > 0 && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1.5 h-3.5 w-3.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center shadow-sm shadow-red-500/40"
+                  <span
+                    className="absolute -top-1.5 -right-2 min-w-[16px] h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center px-1 shadow-sm ring-2 ring-white dark:ring-[#0f0f13]"
                     aria-label={`${badgeCount} unread`}
                   >
                     {badgeCount > 9 ? "9+" : badgeCount}
-                  </motion.span>
+                  </span>
                 )}
               </div>
               <span className={cn(
