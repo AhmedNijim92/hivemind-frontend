@@ -117,7 +117,7 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
     <div className="flex flex-col h-[calc(100vh-4rem)] lg:h-screen max-w-2xl mx-auto">
       {/* Header */}
       <motion.header initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-        className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 bg-white/90 dark:bg-surface-dark/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800"
+        className="sticky top-0 z-10 flex items-center gap-3 px-4 h-14 bg-white/90 dark:bg-[#0f0f13]/90 backdrop-blur-xl border-b border-gray-100 dark:border-white/[0.04]"
       >
         <button onClick={() => router.push("/chat")} className="btn-ghost p-1.5 rounded-lg lg:hidden" aria-label="Back">
           <ArrowLeft className="h-5 w-5" />
@@ -245,10 +245,10 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
       </AnimatePresence>
 
       {/* Input bar */}
-      <div className="sticky bottom-0 px-4 py-3 bg-white dark:bg-surface-dark border-t border-gray-100 dark:border-gray-800 safe-area-pb">
-        <div className="flex items-center gap-2">
-          <button onClick={() => fileInputRef.current?.click()} className="btn-ghost p-2 rounded-xl flex-shrink-0" aria-label="Attach image">
-            <ImagePlus className="h-5 w-5 text-gray-400" />
+      <div className="sticky bottom-0 px-4 py-2.5 bg-white/95 dark:bg-[#0f0f13]/95 backdrop-blur-xl border-t border-gray-100 dark:border-white/[0.04] safe-area-pb">
+        <div className="flex items-center gap-2 bg-gray-50 dark:bg-white/[0.03] rounded-2xl px-3 py-1 border border-gray-200 dark:border-white/[0.06] focus-within:border-brand-400 dark:focus-within:border-brand-600 transition-colors">
+          <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-gray-400 hover:text-brand-500 transition-colors flex-shrink-0" aria-label="Attach image">
+            <ImagePlus className="h-5 w-5" />
           </button>
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
 
@@ -259,8 +259,7 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="input-base flex-1 py-2.5"
-            autoFocus
+            className="flex-1 py-2.5 bg-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400 outline-none"
             aria-label="Message"
           />
 
@@ -269,17 +268,17 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
             onClick={handleSend}
             disabled={(!input.trim() && !imageFile) || uploading}
             className={cn(
-              "p-2.5 rounded-xl transition-all duration-200 flex-shrink-0",
+              "p-2 rounded-xl transition-all duration-200 flex-shrink-0",
               (input.trim() || imageFile)
-                ? "bg-brand-500 hover:bg-brand-600 text-white shadow-md shadow-brand-500/25"
-                : "bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed"
+                ? "bg-brand-500 hover:bg-brand-600 text-white shadow-sm"
+                : "text-gray-300 dark:text-gray-600 cursor-not-allowed"
             )}
             aria-label="Send"
           >
             {uploading ? (
-              <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              <Send className="h-5 w-5" />
+              <Send className="h-4 w-4" />
             )}
           </motion.button>
         </div>

@@ -56,12 +56,13 @@ export function NotificationItem({ notification, index = 0 }: NotificationItemPr
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3, delay: index * 0.04, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={{ x: 4, backgroundColor: "rgba(168, 85, 247, 0.03)" }}
       whileTap={{ scale: 0.99 }}
       onClick={handleClick}
       className={cn(
-        "w-full flex items-start gap-3 p-4 text-left rounded-xl transition-all duration-200",
-        !notification.read && "bg-brand-50/30 dark:bg-brand-950/10"
+        "w-full flex items-start gap-3 px-4 py-3.5 text-left rounded-2xl border transition-all duration-200",
+        !notification.read
+          ? "bg-brand-50/40 dark:bg-brand-950/15 border-brand-100 dark:border-brand-900/30"
+          : "bg-white dark:bg-surface-dark-2 border-gray-100 dark:border-white/[0.04] hover:border-gray-200 dark:hover:border-white/[0.08]"
       )}
     >
       {/* Icon */}

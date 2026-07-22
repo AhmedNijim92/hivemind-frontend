@@ -54,8 +54,8 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
       <Link
         href={`/chat/${conversation.id}`}
         className={cn(
-          "flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors relative",
-          hasUnread && "bg-brand-50/40 dark:bg-brand-950/15"
+          "flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors relative",
+          hasUnread && "bg-brand-50/30 dark:bg-brand-950/10"
         )}
       >
         {/* Pin indicator */}

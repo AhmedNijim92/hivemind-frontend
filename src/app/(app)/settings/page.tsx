@@ -28,10 +28,10 @@ export default function SettingsPage() {
   return (
     <>
       <TopBar title="Settings" />
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Manage your account and preferences</p>
+      <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+        <div className="hidden lg:block">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Settings</h1>
+          <p className="text-gray-400 text-sm mt-0.5">Manage your account and preferences</p>
         </div>
 
         {/* Account */}
