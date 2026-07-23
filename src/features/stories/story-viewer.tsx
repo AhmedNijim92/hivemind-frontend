@@ -29,7 +29,7 @@ export function StoryViewer({ groups, initialGroupIndex, onClose }: StoryViewerP
   const [showReplyInput, setShowReplyInput] = useState(false);
 
   const userId = useAuthStore((s) => s.userId);
-  const { markViewed } = useViewStory();
+  const markViewed = useViewStory();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const replyInputRef = useRef<HTMLInputElement>(null);
