@@ -27,8 +27,8 @@
   }
 
   body {
-    @apply bg-gray-50 dark:bg-surface-dark text-gray-900 dark:text-gray-100;
-    @apply transition-colors duration-300;
+    @apply bg-gray-50 dark:bg-[#09090b] text-gray-900 dark:text-gray-100;
+    @apply transition-colors duration-200;
   }
 
   /* Noise texture overlay — subtle grain for depth */
