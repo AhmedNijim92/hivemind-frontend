@@ -1,7 +1,6 @@
 "use client";
 
 import { forwardRef, useState } from "react";
-import { motion } from "framer-motion";
 import { cn } from "@/utils/cn";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -19,24 +18,26 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <motion.label
+          <label
             htmlFor={inputId}
-            animate={{
-              color: focused ? "rgb(168, 85, 247)" : undefined,
-            }}
-            className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors"
+            className={cn(
+              "text-sm font-medium transition-colors",
+              focused ? "text-brand-500" : "text-gray-700 dark:text-gray-300"
+            )}
           >
             {label}
-          </motion.label>
+          </label>
         )}
         <div className="relative">
           {icon && (
-            <motion.div
-              animate={{ color: focused ? "rgb(168, 85, 247)" : undefined }}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition-colors"
+            <div
+              className={cn(
+                "absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors",
+                focused ? "text-brand-500" : "text-gray-400"
+              )}
             >
               {icon}
-            </motion.div>
+            </div>
           )}
           <input
             ref={ref}
@@ -57,29 +58,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             }}
             {...props}
           />
-          {/* Animated focus border glow */}
+          {/* Focus ring */}
           {focused && !error && (
-            <motion.div
-              layoutId="input-glow"
-              className="absolute inset-0 rounded-xl pointer-events-none"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{
-                boxShadow: "0 0 0 3px rgba(168, 85, 247, 0.1), 0 0 20px -5px rgba(168, 85, 247, 0.15)",
-                borderRadius: "0.75rem",
-              }}
+            <div
+              className="absolute inset-0 rounded-xl pointer-events-none ring-2 ring-brand-500/20"
             />
           )}
         </div>
         {error && (
-          <motion.p
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-xs text-red-500 font-medium"
-          >
-            {error}
-          </motion.p>
+          <p className="text-xs text-red-500 font-medium">{error}</p>
         )}
         {hint && !error && (
           <p className="text-xs text-gray-400">{hint}</p>
