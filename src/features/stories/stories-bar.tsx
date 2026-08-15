@@ -4,18 +4,13 @@ import { useState, useRef } from "react";
 import { Plus, Camera } from "lucide-react";
 import { motion } from "framer-motion";
 import { Avatar } from "@/components/ui/avatar";
-import { useAuthStore } from "@/store/auth-store";
-import { useCurrentUser } from "@/hooks/use-user";
 import { useGroupContextStore } from "@/store/group-context-store";
 import { useStories } from "@/hooks/use-stories";
 import { CreateStoryModal } from "./create-story-modal";
 import { StoryViewer } from "./story-viewer";
 import { cn } from "@/utils/cn";
-import toast from "react-hot-toast";
 
 export function StoriesBar() {
-  const userId = useAuthStore((s) => s.userId);
-  const { data: currentUser } = useCurrentUser();
   const activeGroup = useGroupContextStore((s) => s.activeGroup);
   const { groups } = useStories();
 
@@ -34,46 +29,44 @@ export function StoriesBar() {
     <>
       <div className="card p-3">
         <div ref={scrollRef} className="flex gap-3 overflow-x-auto scrollbar-hide pb-0.5">
-          {/* Add Story for active group */}
-          {activeGroup && (
-            <motion.div
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                if (hasStoryForGroup) {
-                  const idx = groups.findIndex((g) => g.groupId === activeGroup.groupId);
-                  openViewer(idx >= 0 ? idx : 0);
-                } else {
-                  setCreateOpen(true);
-                }
-              }}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setCreateOpen(true); } }}
-              className="flex flex-col items-center gap-1.5 min-w-[68px] cursor-pointer"
-            >
-              <div className="relative">
-                {hasStoryForGroup ? (
-                  <div className="p-[2.5px] rounded-full bg-gradient-to-tr from-brand-500 to-pink-500">
-                    <div className="rounded-full p-[2px] bg-white dark:bg-surface-dark">
-                      <Avatar name={activeGroup.name} size="lg" />
-                    </div>
+          {/* Add Story — always visible */}
+          <motion.div
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              if (activeGroup && hasStoryForGroup) {
+                const idx = groups.findIndex((g) => g.groupId === activeGroup.groupId);
+                openViewer(idx >= 0 ? idx : 0);
+              } else {
+                setCreateOpen(true);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setCreateOpen(true); } }}
+            className="flex flex-col items-center gap-1.5 min-w-[68px] cursor-pointer"
+          >
+            <div className="relative">
+              {activeGroup && hasStoryForGroup ? (
+                <div className="p-[2.5px] rounded-full bg-gradient-to-tr from-brand-500 to-pink-500">
+                  <div className="rounded-full p-[2px] bg-white dark:bg-surface-dark">
+                    <Avatar name={activeGroup.name} size="lg" />
                   </div>
-                ) : (
-                  <div className="relative">
-                    <div className="h-14 w-14 rounded-full bg-gray-100 dark:bg-white/[0.04] border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center">
-                      <span className="font-bold text-brand-500 text-sm">{activeGroup.name[0].toUpperCase()}</span>
-                    </div>
-                    <div className="absolute -bottom-0.5 -right-0.5 bg-brand-500 text-white rounded-full p-[3px] border-2 border-white dark:border-surface-dark shadow-md">
-                      <Plus className="h-3 w-3" />
-                    </div>
+                </div>
+              ) : (
+                <div className="relative">
+                  <div className="h-14 w-14 rounded-full bg-gray-100 dark:bg-white/[0.04] border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center">
+                    <Camera className="h-5 w-5 text-brand-500" />
                   </div>
-                )}
-              </div>
-              <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate w-[68px] text-center font-medium leading-tight">
-                {hasStoryForGroup ? activeGroup.name : "Add story"}
-              </span>
-            </motion.div>
-          )}
+                  <div className="absolute -bottom-0.5 -right-0.5 bg-brand-500 text-white rounded-full p-[3px] border-2 border-white dark:border-surface-dark shadow-md">
+                    <Plus className="h-3 w-3" />
+                  </div>
+                </div>
+              )}
+            </div>
+            <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate w-[68px] text-center font-medium leading-tight">
+              {activeGroup && hasStoryForGroup ? activeGroup.name : "Add story"}
+            </span>
+          </motion.div>
 
           {/* Other groups' stories */}
           {groups
@@ -106,24 +99,6 @@ export function StoriesBar() {
                 </motion.div>
               );
             })}
-
-          {/* No active group — show add story hint that prompts group selection */}
-          {!activeGroup && (
-            <motion.div
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                toast.error("Select a group first to create a story");
-              }}
-              role="button"
-              tabIndex={0}
-              className="flex flex-col items-center gap-1.5 min-w-[68px] cursor-pointer"
-            >
-              <div className="h-14 w-14 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center hover:border-brand-400 transition-colors">
-                <Camera className="h-5 w-5 text-gray-400" />
-              </div>
-              <span className="text-[10px] text-gray-400 truncate w-[68px] text-center">Add story</span>
-            </motion.div>
-          )}
         </div>
       </div>
 
