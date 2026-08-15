@@ -42,4 +42,11 @@ export const userService = {
     );
     return res.data;
   },
+
+  searchUsers: async (query: string): Promise<UserProfileDto[]> => {
+    const res = await apiClient.get<UserProfileDto[]>("/api/v1/users/search", {
+      params: { q: query },
+    });
+    return res.data;
+  },
 };

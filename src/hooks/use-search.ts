@@ -23,29 +23,16 @@ export function useSearchGroups(query: string) {
 }
 
 /**
- * Search users by userId (the backend exposes profile by ID).
- * For now, we search followers/following lists client-side.
+ * Search all users via backend search endpoint.
  */
 export function useSearchUsers(query: string, userId: string) {
   return useQuery({
     queryKey: searchKeys.users(query),
     queryFn: async (): Promise<UserProfileDto[]> => {
-      if (!query.trim() || !userId) return [];
-      const [followers, following] = await Promise.all([
-        userService.getFollowers(userId),
-        userService.getFollowing(userId),
-      ]);
-      const map = new Map<string, UserProfileDto>();
-      [...followers, ...following].forEach((u) => map.set(u.userId, u));
-      const all = Array.from(map.values());
-      const q = query.toLowerCase();
-      return all.filter(
-        (u) =>
-          u.name.toLowerCase().includes(q) ||
-          u.mobileNumber.includes(query)
-      );
+      if (!query.trim()) return [];
+      return userService.searchUsers(query);
     },
-    enabled: query.length >= 2 && !!userId,
+    enabled: query.trim().length >= 2 && !!userId,
     staleTime: 1000 * 30,
   });
 }
