@@ -293,9 +293,15 @@ export default function ProfilePage() {
                   {!groups?.length ? <div className="col-span-2"><EmptyState emoji="🐝" title="No groups yet" description="Join or create a group." /></div> :
                     groups.map((g) => (
                       <Link key={g.groupId} href={`/groups/${g.groupId}`} className="card p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-gray-100 dark:border-gray-800">
-                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center mb-3">
-                          <span className="text-white font-bold text-sm">{g.name[0].toUpperCase()}</span>
-                        </div>
+                        {g.profilePictureUrl ? (
+                          <div className="h-10 w-10 rounded-xl overflow-hidden mb-3 relative">
+                            <img src={g.profilePictureUrl} alt={g.name} className="object-cover w-full h-full" />
+                          </div>
+                        ) : (
+                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center mb-3">
+                            <span className="text-white font-bold text-sm">{g.name[0].toUpperCase()}</span>
+                          </div>
+                        )}
                         <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">{g.name}</p>
                         <p className="text-xs text-gray-400 mt-0.5">{formatNumber(g.memberCount)} members</p>
                       </Link>
