@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/utils/cn";
 import { timeAgo } from "@/utils/format";
 import { useMarkAsRead } from "@/hooks/use-notifications";
+import { useHaptic } from "@/hooks/use-haptic";
 import type { NotificationDto, NotificationType } from "@/types";
 
 const iconMap: Record<NotificationType, React.ReactNode> = {
@@ -42,8 +43,10 @@ interface NotificationItemProps {
 export function NotificationItem({ notification, index = 0 }: NotificationItemProps) {
   const markAsRead = useMarkAsRead();
   const router = useRouter();
+  const haptic = useHaptic();
 
   const handleClick = () => {
+    haptic.tap();
     if (!notification.read) {
       markAsRead.mutate(notification.id);
     }

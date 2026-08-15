@@ -8,6 +8,7 @@ import { MeetingCard } from "@/features/meetings/meeting-card";
 import { CreateMeetingModal } from "@/features/meetings/create-meeting-modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
+import { PageTransition } from "@/components/ui/page-transition";
 import { useMyGroups } from "@/hooks/use-groups";
 import { useGroupMeetings } from "@/hooks/use-meetings";
 import { usePageTitle } from "@/hooks/use-page-title";
@@ -99,7 +100,7 @@ export default function MeetingsPage() {
   const { data: groups, isLoading: groupsLoading } = useMyGroups();
 
   return (
-    <>
+    <PageTransition>
       <TopBar title="Meetings" />
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-8">
         {/* Page header */}
@@ -124,6 +125,6 @@ export default function MeetingsPage() {
           </div>
         )}
       </div>
-    </>
+    </PageTransition>
   );
 }

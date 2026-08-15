@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/utils/cn";
 import { useUnreadCount } from "@/hooks/use-notifications";
 import { useTotalUnread } from "@/hooks/use-chat";
+import { useHaptic } from "@/hooks/use-haptic";
 
 const navItems = [
   { href: "/feed", icon: Home, label: "Home" },
@@ -20,6 +21,7 @@ export function MobileNav() {
   const pathname = usePathname();
   const { data: unreadNotifs } = useUnreadCount();
   const chatUnread = useTotalUnread();
+  const haptic = useHaptic();
 
   return (
     <nav
@@ -42,6 +44,7 @@ export function MobileNav() {
             <Link
               key={href}
               href={href}
+              onClick={() => { if (!isActive) haptic.selection(); }}
               aria-current={isActive ? "page" : undefined}
               className={cn(
                 "relative flex flex-col items-center gap-0.5 px-4 py-2 rounded-2xl transition-all duration-300",

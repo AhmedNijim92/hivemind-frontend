@@ -6,17 +6,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import { TopBar } from "@/components/layout/top-bar";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageTransition } from "@/components/ui/page-transition";
 import { ConversationItem } from "@/features/chat/conversation-item";
 import { NewChatModal } from "@/features/chat/new-chat-modal";
 import { useConversations } from "@/hooks/use-chat";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useHaptic } from "@/hooks/use-haptic";
 import { useAuthStore } from "@/store/auth-store";
 
 export default function ChatPage() {
   usePageTitle("Messages");
   const conversations = useConversations();
   const userId = useAuthStore((s) => s.userId);
+  const haptic = useHaptic();
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 200);
@@ -36,13 +39,13 @@ export default function ChatPage() {
   const unpinned = filtered.filter((c) => !c.pinned);
 
   return (
-    <>
+    <PageTransition>
       <TopBar title="Messages" />
       <div className="max-w-2xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white hidden lg:block">Messages</h1>
-          <Button size="sm" onClick={() => setIsNewChatOpen(true)}>
+          <Button size="sm" onClick={() => { haptic.tap(); setIsNewChatOpen(true); }}>
             <Plus className="h-4 w-4" /> New
           </Button>
         </div>
@@ -111,6 +114,6 @@ export default function ChatPage() {
       </div>
 
       <NewChatModal open={isNewChatOpen} onClose={() => setIsNewChatOpen(false)} />
-    </>
+    </PageTransition>
   );
 }

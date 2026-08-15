@@ -12,8 +12,10 @@ import { PostSkeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { PageTransition } from "@/components/ui/page-transition";
 import { usePublicFeed } from "@/hooks/use-feed";
 import { useCurrentUser } from "@/hooks/use-user";
+import { useHaptic } from "@/hooks/use-haptic";
 import { useGroupContextStore } from "@/store/group-context-store";
 import { useUIStore } from "@/store/ui-store";
 import { usePageTitle } from "@/hooks/use-page-title";
@@ -85,14 +87,16 @@ export default function FeedPage() {
   const { activeGroupId, activeGroup } = useGroupContextStore();
   const { openCreatePost } = useUIStore();
   const clearActiveGroup = useGroupContextStore((s) => s.clearActiveGroup);
+  const haptic = useHaptic();
 
   const handleSwitchGroup = () => {
+    haptic.tap();
     clearActiveGroup();
     router.push("/select-group");
   };
 
   return (
-    <>
+    <PageTransition>
       <TopBar title="Feed" />
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
         {/* Stories */}
@@ -191,6 +195,21 @@ export default function FeedPage() {
           )}
         </AnimatePresence>
       </div>
-    </>
+
+      {/* Floating Action Button for mobile */}
+      {activeGroupId && (
+        <motion.button
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.3, type: "spring", stiffness: 300, damping: 20 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => { haptic.tap(); openCreatePost(); }}
+          className="fixed bottom-24 right-5 lg:hidden z-30 h-14 w-14 rounded-full bg-brand-500 hover:bg-brand-600 text-white shadow-xl shadow-brand-500/30 flex items-center justify-center transition-colors"
+          aria-label="Create post"
+        >
+          <Plus className="h-6 w-6" />
+        </motion.button>
+      )}
+    </PageTransition>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Search, MessageCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Modal } from "@/components/ui/modal";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -9,6 +10,7 @@ import { cn } from "@/utils/cn";
 import { useAuthStore } from "@/store/auth-store";
 import { useFollowers, useFollowing } from "@/hooks/use-user";
 import { useStartConversation } from "@/hooks/use-chat";
+import { useHaptic } from "@/hooks/use-haptic";
 import type { UserProfileDto } from "@/types";
 
 interface NewChatModalProps {
@@ -22,6 +24,7 @@ export function NewChatModal({ open, onClose }: NewChatModalProps) {
   const { data: followers } = useFollowers(userId ?? "");
   const { data: following } = useFollowing(userId ?? "");
   const startConversation = useStartConversation();
+  const haptic = useHaptic();
 
   // Merge followers + following, deduplicate by userId
   const users = useMemo(() => {
@@ -46,6 +49,7 @@ export function NewChatModal({ open, onClose }: NewChatModalProps) {
   }, [users, search]);
 
   const handleSelect = (user: UserProfileDto) => {
+    haptic.impact();
     startConversation(user.userId, user.name, user.profilePictureUrl);
     setSearch("");
     onClose();
@@ -81,9 +85,12 @@ export function NewChatModal({ open, onClose }: NewChatModalProps) {
           />
         ) : (
           <div className="space-y-1">
-            {filtered.map((user) => (
-              <button
+            {filtered.map((user, i) => (
+              <motion.button
                 key={user.userId}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.03, duration: 0.2 }}
                 onClick={() => handleSelect(user)}
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl",
@@ -105,7 +112,7 @@ export function NewChatModal({ open, onClose }: NewChatModalProps) {
                     </p>
                   )}
                 </div>
-              </button>
+              </motion.button>
             ))}
           </div>
         )}

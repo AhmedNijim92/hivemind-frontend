@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { MediaImage } from "@/components/ui/media-image";
 import { Lightbox } from "@/components/ui/lightbox";
 import { useLikePost } from "@/hooks/use-posts";
+import { useHaptic } from "@/hooks/use-haptic";
 import { timeAgo, formatNumber } from "@/utils/format";
 import type { PostDto } from "@/types";
 import { CommentsPanel } from "./comments-panel";
@@ -26,15 +27,17 @@ export function PostCard({ post, index = 0 }: PostCardProps) {
   const [showHeart, setShowHeart] = useState(false);
   const lastTapRef = useRef(0);
   const likePost = useLikePost();
+  const haptic = useHaptic();
 
   const handleLike = useCallback(() => {
     if (liked) return;
     setLiked(true);
+    haptic.impact();
     likePost.mutate(
       { groupId: post.groupId, postId: post.postId },
       { onError: () => { setLiked(false); toast.error("You already liked this post"); } }
     );
-  }, [liked, likePost, post.groupId, post.postId]);
+  }, [liked, likePost, post.groupId, post.postId, haptic]);
 
   // Double-tap to like (on media area)
   const handleDoubleTap = useCallback(() => {

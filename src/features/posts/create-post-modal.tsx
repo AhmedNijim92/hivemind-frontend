@@ -6,12 +6,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ImagePlus, X } from "lucide-react";
 import { useDropzone } from "react-dropzone";
+import { motion, AnimatePresence } from "framer-motion";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/avatar";
 import { useCreatePost } from "@/hooks/use-posts";
 import { useCurrentUser } from "@/hooks/use-user";
+import { useHaptic } from "@/hooks/use-haptic";
 import { mediaService } from "@/services/media.service";
 import { useUIStore } from "@/store/ui-store";
 import { useGroupContextStore } from "@/store/group-context-store";
@@ -34,6 +36,7 @@ export function CreatePostModal() {
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const haptic = useHaptic();
 
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -71,6 +74,7 @@ export function CreatePostModal() {
       return;
     }
 
+    haptic.impact();
     let mediaUrl: string | undefined;
 
     if (mediaFile) {
@@ -155,51 +159,61 @@ export function CreatePostModal() {
         </div>
 
         {/* Media preview */}
-        {mediaPreview && (
-          <div className="relative rounded-xl overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={mediaPreview}
-              alt="Preview"
-              className="w-full max-h-64 object-cover rounded-xl"
-            />
-            <button
-              type="button"
-              onClick={removeMedia}
-              className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1.5 hover:bg-black/80 transition-colors"
-              aria-label="Remove media"
+        <AnimatePresence mode="wait">
+          {mediaPreview ? (
+            <motion.div
+              key="preview"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative rounded-xl overflow-hidden"
             >
-              <X className="h-4 w-4" />
-            </button>
-            {/* File info */}
-            {mediaFile && (
-              <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded-lg">
-                {formatFileSize(mediaFile.size)}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Dropzone */}
-        {!mediaPreview && (
-          <div
-            {...getRootProps()}
-            className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors ${
-              isDragActive
-                ? "border-brand-500 bg-brand-50 dark:bg-brand-950/20"
-                : "border-gray-200 dark:border-gray-700 hover:border-brand-400"
-            }`}
-          >
-            <input {...getInputProps()} aria-label="Upload media" />
-            <ImagePlus className="h-6 w-6 mx-auto text-gray-400 mb-1" />
-            <p className="text-sm text-gray-400">
-              {isDragActive ? "Drop here" : "Add photo or video"}
-            </p>
-            <p className="text-xs text-gray-300 dark:text-gray-600 mt-0.5">
-              Max 50MB
-            </p>
-          </div>
-        )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={mediaPreview}
+                alt="Preview"
+                className="w-full max-h-64 object-cover rounded-xl"
+              />
+              <button
+                type="button"
+                onClick={removeMedia}
+                className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1.5 hover:bg-black/80 transition-colors"
+                aria-label="Remove media"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              {/* File info */}
+              {mediaFile && (
+                <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded-lg">
+                  {formatFileSize(mediaFile.size)}
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            /* Dropzone */
+            <motion.div
+              key="dropzone"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors ${
+                isDragActive
+                  ? "border-brand-500 bg-brand-50 dark:bg-brand-950/20"
+                  : "border-gray-200 dark:border-gray-700 hover:border-brand-400"
+              }`}
+            >
+              <input {...getInputProps()} aria-label="Upload media" />
+              <ImagePlus className="h-6 w-6 mx-auto text-gray-400 mb-1" />
+              <p className="text-sm text-gray-400">
+                {isDragActive ? "Drop here" : "Add photo or video"}
+              </p>
+              <p className="text-xs text-gray-300 dark:text-gray-600 mt-0.5">
+                Max 50MB
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Actions */}
         <div className="flex gap-3 pt-2 border-t border-gray-100 dark:border-gray-800">

@@ -5,8 +5,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Phone, KeyRound, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useHaptic } from "@/hooks/use-haptic";
 import { useSendOtp, useSignin } from "@/hooks/use-auth";
 
 const phoneSchema = z.object({
@@ -25,9 +27,17 @@ const otpSchema = z.object({
 type PhoneForm = z.infer<typeof phoneSchema>;
 type OtpForm = z.infer<typeof otpSchema>;
 
+const fadeSlide = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -20 },
+  transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] },
+};
+
 export function LoginForm() {
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [mobileNumber, setMobileNumber] = useState("");
+  const haptic = useHaptic();
 
   const sendOtp = useSendOtp();
   const signin = useSignin();
@@ -47,94 +57,136 @@ export function LoginForm() {
     try {
       await sendOtp.mutateAsync({ mobileNumber: cleanNumber });
     } catch {}
+    haptic.success();
     setMobileNumber(cleanNumber);
     setStep("otp");
   };
 
   const onVerifyOtp = async (data: OtpForm) => {
+    haptic.impact();
     await signin.mutateAsync({ mobileNumber, otp: data.otp });
   };
 
-  if (step === "otp") {
-    return (
-      <div className="w-full max-w-sm mx-auto">
-        <div className="mb-8">
-          <div className="h-12 w-12 rounded-2xl bg-brand-500 flex items-center justify-center mb-4">
-            <KeyRound className="h-6 w-6 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Enter your code
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
-            We sent a 6-digit code to{" "}
-            <span className="font-semibold text-gray-700 dark:text-gray-200">{mobileNumber}</span>
-          </p>
-        </div>
-
-        <form onSubmit={otpForm.handleSubmit(onVerifyOtp)} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              One-time password
-            </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={6}
-              autoComplete="one-time-code"
-              autoFocus
-              placeholder="000000"
-              {...otpForm.register("otp")}
-              className="w-full text-center text-2xl tracking-[0.4em] font-mono px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
-            />
-            {otpForm.formState.errors.otp?.message && (
-              <p className="text-red-500 text-xs mt-1.5">{otpForm.formState.errors.otp.message}</p>
-            )}
-          </div>
-
-          <Button type="submit" className="w-full" loading={signin.isPending}>
-            Verify & Sign in
-          </Button>
-
-          <button
-            type="button"
-            onClick={() => setStep("phone")}
-            className="w-full text-sm text-gray-400 hover:text-brand-500 transition-colors py-2"
-          >
-            ← Use a different number
-          </button>
-        </form>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full max-w-sm mx-auto">
-      <div className="mb-8">
-        <div className="h-12 w-12 rounded-2xl bg-brand-500 flex items-center justify-center mb-4">
-          <Phone className="h-6 w-6 text-white" />
-        </div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Welcome back
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
-          Enter your mobile number to receive a one-time code
-        </p>
-      </div>
+      <AnimatePresence mode="wait">
+        {step === "otp" ? (
+          <motion.div key="otp" {...fadeSlide}>
+            <div className="mb-8">
+              <motion.div
+                initial={{ scale: 0, rotate: -20 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
+                className="h-12 w-12 rounded-2xl bg-brand-500 flex items-center justify-center mb-4"
+              >
+                <KeyRound className="h-6 w-6 text-white" />
+              </motion.div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Enter your code
+              </h1>
+              <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
+                We sent a 6-digit code to{" "}
+                <span className="font-semibold text-gray-700 dark:text-gray-200">{mobileNumber}</span>
+              </p>
+            </div>
 
-      <form onSubmit={phoneForm.handleSubmit(onSendOtp)} className="space-y-4">
-        <Input
-          label="Mobile number"
-          placeholder="+1 555 000 0000"
-          type="tel"
-          autoComplete="tel"
-          icon={<Phone className="h-4 w-4" />}
-          error={phoneForm.formState.errors.mobileNumber?.message}
-          {...phoneForm.register("mobileNumber")}
-        />
-        <Button type="submit" className="w-full" loading={sendOtp.isPending}>
-          Send OTP <ArrowRight className="h-4 w-4" />
-        </Button>
-      </form>
+            <form onSubmit={otpForm.handleSubmit(onVerifyOtp)} className="space-y-4">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+              >
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  One-time password
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  autoComplete="one-time-code"
+                  autoFocus
+                  placeholder="000000"
+                  {...otpForm.register("otp")}
+                  className="w-full text-center text-2xl tracking-[0.4em] font-mono px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
+                />
+                {otpForm.formState.errors.otp?.message && (
+                  <motion.p
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="text-red-500 text-xs mt-1.5"
+                  >
+                    {otpForm.formState.errors.otp.message}
+                  </motion.p>
+                )}
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Button type="submit" className="w-full" loading={signin.isPending}>
+                  Verify & Sign in
+                </Button>
+              </motion.div>
+
+              <button
+                type="button"
+                onClick={() => { haptic.tap(); setStep("phone"); }}
+                className="w-full text-sm text-gray-400 hover:text-brand-500 transition-colors py-2"
+              >
+                ← Use a different number
+              </button>
+            </form>
+          </motion.div>
+        ) : (
+          <motion.div key="phone" {...fadeSlide}>
+            <div className="mb-8">
+              <motion.div
+                initial={{ scale: 0, rotate: -20 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
+                className="h-12 w-12 rounded-2xl bg-brand-500 flex items-center justify-center mb-4"
+              >
+                <Phone className="h-6 w-6 text-white" />
+              </motion.div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Welcome back
+              </h1>
+              <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
+                Enter your mobile number to receive a one-time code
+              </p>
+            </div>
+
+            <form onSubmit={phoneForm.handleSubmit(onSendOtp)} className="space-y-4">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+              >
+                <Input
+                  label="Mobile number"
+                  placeholder="+1 555 000 0000"
+                  type="tel"
+                  autoComplete="tel"
+                  icon={<Phone className="h-4 w-4" />}
+                  error={phoneForm.formState.errors.mobileNumber?.message}
+                  {...phoneForm.register("mobileNumber")}
+                />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Button type="submit" className="w-full" loading={sendOtp.isPending}>
+                  Send OTP <ArrowRight className="h-4 w-4" />
+                </Button>
+              </motion.div>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { GroupCard } from "@/features/groups/group-card";
 import { GroupCardSkeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
+import { PageTransition } from "@/components/ui/page-transition";
 import { useMyGroups, useUserMemberships } from "@/hooks/use-groups";
 import { useUIStore } from "@/store/ui-store";
 import { usePageTitle } from "@/hooks/use-page-title";
@@ -26,7 +27,7 @@ export default function GroupsPage() {
     : allGroups;
 
   return (
-    <>
+    <PageTransition>
       <TopBar title="Groups" />
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
         {/* Header */}
@@ -79,6 +80,6 @@ export default function GroupsPage() {
           </motion.div>
         )}
       </div>
-    </>
+    </PageTransition>
   );
 }

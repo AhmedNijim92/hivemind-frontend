@@ -11,9 +11,13 @@ import { cn } from "@/utils/cn";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageTransition } from "@/components/ui/page-transition";
+import { TypingIndicator } from "@/components/ui/typing-indicator";
+import { VoiceRecorder } from "@/components/ui/voice-message";
 import { MessageBubble } from "@/features/chat/message-bubble";
 import { useMessages, useSendMessage } from "@/hooks/use-chat";
 import { useCurrentUser } from "@/hooks/use-user";
+import { useHaptic } from "@/hooks/use-haptic";
 import { useAuthStore } from "@/store/auth-store";
 import { useChatStore } from "@/store/chat-store";
 import { mediaService } from "@/services/media.service";
@@ -24,6 +28,7 @@ import toast from "react-hot-toast";
 export default function ConversationPage({ params }: { params: Promise<{ conversationId: string }> }) {
   const { conversationId } = use(params);
   const router = useRouter();
+  const haptic = useHaptic();
   const userId = useAuthStore((s) => s.userId);
   const { data: currentUser } = useCurrentUser();
 
@@ -42,6 +47,8 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [replyTo, setReplyTo] = useState<{ id: string; senderName: string; content: string } | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -53,6 +60,20 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
   const memberCount = isGroup ? conversation?.participantIds.length : undefined;
 
   usePageTitle(displayName);
+
+  // Simulate typing indicator (random appearance for UX demo)
+  useEffect(() => {
+    if (!conversation) return;
+    const interval = setInterval(() => {
+      // Simulate other user typing occasionally
+      const shouldType = Math.random() > 0.85;
+      if (shouldType) {
+        setIsTyping(true);
+        setTimeout(() => setIsTyping(false), 2000 + Math.random() * 2000);
+      }
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [conversation]);
 
   useEffect(() => {
     if (conversationId && userId) markConversationRead(conversationId, userId);
@@ -79,6 +100,7 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
 
   const handleSend = useCallback(async () => {
     if ((!input.trim() && !imageFile) || !conversationId) return;
+    haptic.impact();
     const senderName = currentUser?.name ?? "You";
 
     let imageUrl: string | undefined;
@@ -93,17 +115,37 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
       setUploading(false);
     }
 
-    sendMessage(conversationId, senderName, input.trim() || (imageUrl ? "📷 Photo" : ""), imageUrl);
+    const content = replyTo
+      ? `↩️ ${replyTo.senderName}: "${replyTo.content.slice(0, 30)}${replyTo.content.length > 30 ? "…" : ""}"\n${input.trim() || (imageUrl ? "📷 Photo" : "")}`
+      : input.trim() || (imageUrl ? "📷 Photo" : "");
+
+    sendMessage(conversationId, senderName, content, imageUrl);
     setInput("");
+    setReplyTo(null);
     removeImage();
     inputRef.current?.focus();
-  }, [input, imageFile, conversationId, currentUser?.name, sendMessage]);
+  }, [input, imageFile, conversationId, currentUser?.name, sendMessage, replyTo, haptic]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
+  const handleVoiceSend = useCallback((audioBlob: Blob, durationMs: number) => {
+    haptic.impact();
+    const senderName = currentUser?.name ?? "You";
+    // Send as text representation since we don't have audio upload yet
+    const seconds = Math.floor(durationMs / 1000);
+    sendMessage(conversationId, senderName, `🎤 Voice message (${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, "0")})`);
+  }, [conversationId, currentUser?.name, sendMessage, haptic]);
+
+  const handleReply = useCallback((message: { id: string; senderName: string; content: string }) => {
+    haptic.selection();
+    setReplyTo(message);
+    inputRef.current?.focus();
+  }, [haptic]);
+
   const handleDelete = () => {
+    haptic.heavy();
     deleteConversation(conversationId);
     router.push("/chat");
     toast.success("Conversation deleted");
@@ -114,12 +156,12 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] lg:h-screen max-w-2xl mx-auto">
+    <PageTransition className="flex flex-col h-[calc(100vh-4rem)] lg:h-screen max-w-2xl mx-auto">
       {/* Header */}
       <motion.header initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
         className="sticky top-0 z-10 flex items-center gap-3 px-4 h-14 bg-white/90 dark:bg-[#0f0f13]/90 backdrop-blur-xl border-b border-gray-100 dark:border-white/[0.04]"
       >
-        <button onClick={() => router.push("/chat")} className="btn-ghost p-1.5 rounded-lg lg:hidden" aria-label="Back">
+        <button onClick={() => { haptic.tap(); router.push("/chat"); }} className="btn-ghost p-1.5 rounded-lg lg:hidden" aria-label="Back">
           <ArrowLeft className="h-5 w-5" />
         </button>
 
@@ -138,9 +180,29 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
 
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{displayName}</p>
-          <p className="text-xs text-green-500">
-            {isGroup ? `${formatNumber(memberCount ?? 0)} members` : "Online"}
-          </p>
+          <AnimatePresence mode="wait">
+            {isTyping ? (
+              <motion.p
+                key="typing"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                className="text-xs text-brand-500 font-medium"
+              >
+                typing…
+              </motion.p>
+            ) : (
+              <motion.p
+                key="status"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                className="text-xs text-green-500"
+              >
+                {isGroup ? `${formatNumber(memberCount ?? 0)} members` : "Online"}
+              </motion.p>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Header actions */}
@@ -219,13 +281,43 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
                   isSent={isSent}
                   showAvatar={showAvatar}
                   avatarSlot={showAvatar ? <Avatar name={message.senderName} size="xs" className="mt-auto flex-shrink-0" /> : undefined}
+                  onReply={handleReply}
                 />
               </div>
             );
           })
         )}
+
+        {/* Typing indicator */}
+        <AnimatePresence>
+          {isTyping && <TypingIndicator name={isGroup ? undefined : displayName} />}
+        </AnimatePresence>
+
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Reply preview */}
+      <AnimatePresence>
+        {replyTo && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="px-4 py-2 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-surface-dark overflow-hidden"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-8 rounded-full bg-brand-500 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-brand-500">{replyTo.senderName}</p>
+                <p className="text-xs text-gray-500 truncate">{replyTo.content}</p>
+              </div>
+              <button onClick={() => setReplyTo(null)} className="p-1 text-gray-400 hover:text-gray-600" aria-label="Cancel reply">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Image preview */}
       <AnimatePresence>
@@ -255,7 +347,7 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
           <input
             ref={inputRef}
             type="text"
-            placeholder={isGroup ? "Message the group…" : "Type a message…"}
+            placeholder={replyTo ? "Reply…" : isGroup ? "Message the group…" : "Type a message…"}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -263,26 +355,31 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
             aria-label="Message"
           />
 
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={handleSend}
-            disabled={(!input.trim() && !imageFile) || uploading}
-            className={cn(
-              "p-2 rounded-xl transition-all duration-200 flex-shrink-0",
-              (input.trim() || imageFile)
-                ? "bg-brand-500 hover:bg-brand-600 text-white shadow-sm"
-                : "text-gray-300 dark:text-gray-600 cursor-not-allowed"
-            )}
-            aria-label="Send"
-          >
-            {uploading ? (
-              <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </motion.button>
+          {/* Voice recorder (show when no text input) */}
+          {!input.trim() && !imageFile ? (
+            <VoiceRecorder onSend={handleVoiceSend} />
+          ) : (
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleSend}
+              disabled={(!input.trim() && !imageFile) || uploading}
+              className={cn(
+                "p-2 rounded-xl transition-all duration-200 flex-shrink-0",
+                (input.trim() || imageFile)
+                  ? "bg-brand-500 hover:bg-brand-600 text-white shadow-sm"
+                  : "text-gray-300 dark:text-gray-600 cursor-not-allowed"
+              )}
+              aria-label="Send"
+            >
+              {uploading ? (
+                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </motion.button>
+          )}
         </div>
       </div>
-    </div>
+    </PageTransition>
   );
 }

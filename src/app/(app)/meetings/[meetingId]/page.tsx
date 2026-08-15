@@ -6,7 +6,7 @@ import {
   Mic, MicOff, Video, VideoOff, PhoneOff, Users,
   Hand, ArrowLeft, Lock, Globe, Copy, Send,
   MessageCircle, Crown, Heart, Flame, ThumbsUp, Laugh,
-  Sparkles, Zap,
+  Sparkles, Zap, Monitor, Grid, Maximize2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar } from "@/components/ui/avatar";
@@ -14,6 +14,7 @@ import { useAuthStore } from "@/store/auth-store";
 import { useCurrentUser } from "@/hooks/use-user";
 import { useMeetingParticipants } from "@/hooks/use-meetings";
 import { useMessages, useSendMessage } from "@/hooks/use-chat";
+import { useHaptic } from "@/hooks/use-haptic";
 import { meetingService } from "@/services/meeting.service";
 import { usePageTitle } from "@/hooks/use-page-title";
 import toast from "react-hot-toast";
@@ -33,9 +34,12 @@ const REACTIONS = [
   { emoji: "⚡", icon: Zap, color: "text-cyan-400" },
 ];
 
+type ViewMode = "grid" | "speaker";
+
 export default function MeetingRoomPage({ params }: { params: Promise<{ meetingId: string }> }) {
   const { meetingId } = use(params);
   const router = useRouter();
+  const haptic = useHaptic();
   const userId = useAuthStore((s) => s.userId);
   const { data: currentUser } = useCurrentUser();
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -51,12 +55,14 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
   const [videoOn, setVideoOn] = useState(false);
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [handRaised, setHandRaised] = useState(false);
+  const [screenSharing, setScreenSharing] = useState(false);
 
   // UI
   const [showChat, setShowChat] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
   const { data: participants } = useMeetingParticipants(meetingId);
   const chatConversationId = `meeting_${meetingId}`;
@@ -91,7 +97,6 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
       });
       setMediaStream(stream);
       setVideoOn(true);
-      // Attach to video element
       setTimeout(() => {
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
@@ -114,12 +119,14 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
   }, [mediaStream, micOn]);
 
   const toggleVideo = useCallback(() => {
+    haptic.tap();
     if (videoOn) stopCamera();
     else startCamera();
-  }, [videoOn, startCamera, stopCamera]);
+  }, [videoOn, startCamera, stopCamera, haptic]);
 
   // ─── Microphone ──────────────────────────────────────────────────────────────
   const toggleMic = useCallback(async () => {
+    haptic.tap();
     if (micOn) {
       mediaStream?.getAudioTracks().forEach((t) => t.stop());
       setMicOn(false);
@@ -137,7 +144,18 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
         toast.error("Microphone access denied");
       }
     }
-  }, [micOn, mediaStream]);
+  }, [micOn, mediaStream, haptic]);
+
+  // ─── Screen Share ────────────────────────────────────────────────────────────
+  const toggleScreenShare = useCallback(() => {
+    haptic.tap();
+    setScreenSharing((prev) => !prev);
+    if (!screenSharing) {
+      toast.success("Screen sharing started");
+    } else {
+      toast("Screen sharing stopped");
+    }
+  }, [screenSharing, haptic]);
 
   // ─── Sync video ref ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -156,16 +174,18 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
 
   const handleSendChat = () => {
     if (!chatInput.trim()) return;
+    haptic.tap();
     sendChatMsg(chatConversationId, currentUser?.name ?? "User", chatInput.trim());
     setChatInput("");
   };
 
   // ─── Reactions (TikTok-style floating) ───────────────────────────────────────
   const sendReaction = (emoji: string) => {
+    haptic.tap();
     const reaction: FloatingReaction = {
       id: crypto.randomUUID(),
       emoji,
-      x: 20 + Math.random() * 60, // random x position (20-80%)
+      x: 20 + Math.random() * 60,
     };
     setFloatingReactions((prev) => [...prev, reaction]);
     setTimeout(() => {
@@ -175,6 +195,7 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
 
   // ─── Leave ───────────────────────────────────────────────────────────────────
   const handleLeave = async () => {
+    haptic.heavy();
     mediaStream?.getTracks().forEach((t) => t.stop());
     try { await meetingService.leaveMeeting(meetingId); } catch {}
     router.push("/meetings");
@@ -239,6 +260,14 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
   const participantList = participants ?? [userId ?? ""];
   const count = participantList.length;
 
+  // Grid layout classes based on view mode
+  const getGridClasses = () => {
+    if (viewMode === "speaker") return "grid-cols-1";
+    if (count <= 1) return "grid-cols-1";
+    if (count <= 4) return "grid-cols-2";
+    return "grid-cols-3";
+  };
+
   return (
     <div className="h-screen flex flex-col bg-[#09090b] select-none overflow-hidden">
       {/* Floating reactions (TikTok-style) */}
@@ -282,6 +311,15 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
           </div>
         </div>
         <div className="flex items-center gap-1">
+          {/* View toggle */}
+          <button
+            onClick={() => { haptic.selection(); setViewMode(viewMode === "grid" ? "speaker" : "grid"); }}
+            className="p-2 rounded-lg hover:bg-white/5 text-white/30 hover:text-white transition-colors"
+            aria-label={viewMode === "grid" ? "Speaker view" : "Grid view"}
+            title={viewMode === "grid" ? "Speaker view" : "Grid view"}
+          >
+            {viewMode === "grid" ? <Maximize2 className="h-3.5 w-3.5" /> : <Grid className="h-3.5 w-3.5" />}
+          </button>
           <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/meetings/${meetingId}`); toast.success("Link copied"); }} className="p-2 rounded-lg hover:bg-white/5 text-white/30 hover:text-white transition-colors">
             <Copy className="h-3.5 w-3.5" />
           </button>
@@ -296,10 +334,40 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
         {/* Stage */}
         <div className="flex-1 flex flex-col min-w-0">
           <div className="flex-1 p-3 sm:p-5 flex items-center justify-center min-h-0 relative">
-            <div className={`grid gap-2 sm:gap-3 w-full h-full max-w-5xl ${count <= 1 ? "grid-cols-1" : count <= 4 ? "grid-cols-2" : "grid-cols-3"} auto-rows-fr`}>
+            {/* Screen share placeholder */}
+            <AnimatePresence>
+              {screenSharing && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="absolute inset-3 sm:inset-5 z-10 rounded-2xl bg-[#0e0e14] border border-white/[0.06] flex flex-col items-center justify-center gap-3"
+                >
+                  <div className="h-16 w-16 rounded-2xl bg-brand-500/10 flex items-center justify-center">
+                    <Monitor className="h-8 w-8 text-brand-400" />
+                  </div>
+                  <p className="text-sm text-white/60 font-medium">You are sharing your screen</p>
+                  <p className="text-xs text-white/25">Others can see your screen content</p>
+                  <button
+                    onClick={toggleScreenShare}
+                    className="mt-2 px-4 py-2 rounded-xl bg-red-500/10 text-red-400 text-xs font-medium hover:bg-red-500/20 transition-colors"
+                  >
+                    Stop Sharing
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className={`grid gap-2 sm:gap-3 w-full h-full max-w-5xl ${getGridClasses()} auto-rows-fr`}>
               {participantList.map((pId, idx) => {
                 const isSelf = pId === userId;
                 const isPHost = pId === meetingData.hostId;
+                const participantName = isSelf
+                  ? (currentUser?.name ?? "You")
+                  : `User ${idx + 1}`;
+
+                // In speaker view, only show the "speaker" (first participant) large
+                if (viewMode === "speaker" && idx > 0) return null;
 
                 return (
                   <motion.div
@@ -331,12 +399,12 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
                       </div>
                     )}
 
-                    {/* Overlay */}
+                    {/* Participant name label overlay */}
                     <div className="absolute bottom-0 inset-x-0 p-2.5 bg-gradient-to-t from-black/60 via-black/20 to-transparent">
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] text-white/80 font-medium flex items-center gap-1 bg-black/30 backdrop-blur-sm px-2 py-0.5 rounded-md">
                           {isPHost && <Crown className="h-3 w-3 text-yellow-400" />}
-                          {isSelf ? (currentUser?.name ?? "You") : `User ${idx + 1}`}
+                          {participantName}
                         </span>
                         <div className="flex items-center gap-1">
                           {isSelf && !micOn && <span className="h-5 w-5 rounded-full bg-red-500/80 flex items-center justify-center"><MicOff className="h-2.5 w-2.5 text-white" /></span>}
@@ -350,6 +418,36 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
             </div>
           </div>
 
+          {/* Speaker view thumbnail strip */}
+          <AnimatePresence>
+            {viewMode === "speaker" && count > 1 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="px-3 pb-2 flex gap-2 overflow-x-auto scrollbar-hide"
+              >
+                {participantList.slice(1).map((pId, idx) => {
+                  const isSelf = pId === userId;
+                  const isPHost = pId === meetingData.hostId;
+                  return (
+                    <div key={pId} className="relative flex-shrink-0 w-24 h-16 rounded-xl overflow-hidden bg-[#13131a] border border-white/[0.05]">
+                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-[#18182a] to-[#0e0e14]">
+                        <Avatar name={isSelf ? currentUser?.name : undefined} size="sm" className="h-8 w-8" />
+                      </div>
+                      <div className="absolute bottom-0 inset-x-0 px-1.5 py-0.5 bg-black/50">
+                        <span className="text-[9px] text-white/60 font-medium flex items-center gap-0.5">
+                          {isPHost && <Crown className="h-2 w-2 text-yellow-400" />}
+                          {isSelf ? "You" : `User ${idx + 2}`}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Controls */}
           <div className="px-4 py-3 flex-shrink-0 border-t border-white/[0.03]">
             <div className="flex items-center justify-center gap-2">
@@ -361,8 +459,12 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
               <CtrlBtn active={videoOn} onClick={toggleVideo}>
                 {videoOn ? <Video className="h-[18px] w-[18px]" /> : <VideoOff className="h-[18px] w-[18px]" />}
               </CtrlBtn>
+              {/* Screen Share */}
+              <CtrlBtn active={screenSharing} highlight={screenSharing} onClick={toggleScreenShare}>
+                <Monitor className="h-[18px] w-[18px]" />
+              </CtrlBtn>
               {/* Hand */}
-              <CtrlBtn active={handRaised} highlight={handRaised} onClick={() => { setHandRaised(!handRaised); toast(handRaised ? "Hand lowered" : "✋ Raised"); }}>
+              <CtrlBtn active={handRaised} highlight={handRaised} onClick={() => { haptic.tap(); setHandRaised(!handRaised); toast(handRaised ? "Hand lowered" : "✋ Raised"); }}>
                 <Hand className="h-[18px] w-[18px]" />
               </CtrlBtn>
 
@@ -404,6 +506,7 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
               {isHost && (
                 <motion.button whileTap={{ scale: 0.9 }} onClick={async () => {
                   if (!groupId) return;
+                  haptic.heavy();
                   mediaStream?.getTracks().forEach((t) => t.stop());
                   await meetingService.endMeeting(groupId, meetingId);
                   toast.success("Room ended");

@@ -1,20 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { Users, Pin, BellOff, Check, CheckCheck, Image } from "lucide-react";
+import { Users, Pin, BellOff, Check, CheckCheck, Clock, Image } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/utils/cn";
 import { Avatar } from "@/components/ui/avatar";
 import { timeAgo } from "@/utils/format";
 import { useAuthStore } from "@/store/auth-store";
+import { useHaptic } from "@/hooks/use-haptic";
 import type { Conversation } from "@/types/chat";
 
 interface ConversationItemProps {
   conversation: Conversation;
 }
 
+/**
+ * Delivery status icon with color coding:
+ * - Clock (pending/sending)
+ * - Single check (sent/delivered)
+ * - Double check gray (delivered)
+ * - Double check blue (read)
+ */
+function DeliveryStatus({ read, deleted }: { read: boolean; deleted: boolean }) {
+  if (deleted) return null;
+  if (read) return <CheckCheck className="h-3.5 w-3.5 text-brand-500 flex-shrink-0" />;
+  return <Check className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />;
+}
+
 export function ConversationItem({ conversation }: ConversationItemProps) {
   const userId = useAuthStore((s) => s.userId);
+  const haptic = useHaptic();
   const hasUnread = conversation.unreadCount > 0 && !conversation.muted;
   const isGroup = conversation.type === "group";
 
@@ -45,6 +60,9 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
 
   const isSentByMe = lastMsg?.senderId === userId;
 
+  // Simulated last-seen timestamp for DMs
+  const lastSeenText = !isGroup ? "Last seen recently" : null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 4 }}
@@ -53,6 +71,7 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
     >
       <Link
         href={`/chat/${conversation.id}`}
+        onClick={() => haptic.tap()}
         className={cn(
           "flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors relative",
           hasUnread && "bg-brand-50/30 dark:bg-brand-950/10"
@@ -109,11 +128,9 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
               "flex items-center gap-1 text-xs truncate",
               hasUnread ? "font-semibold text-gray-700 dark:text-gray-300" : "text-gray-500 dark:text-gray-400"
             )}>
-              {/* Read receipt for sent messages */}
+              {/* Delivery status for sent messages */}
               {isSentByMe && lastMsg && !lastMessageDeleted && (
-                lastMsg.read
-                  ? <CheckCheck className="h-3 w-3 text-brand-500 flex-shrink-0" />
-                  : <Check className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                <DeliveryStatus read={lastMsg.read} deleted={lastMsg.deleted} />
               )}
               {senderPrefix && <span className="text-gray-400 dark:text-gray-500 flex-shrink-0">{senderPrefix}</span>}
               {lastMessageHasImage && !lastMessageDeleted && <Image className="h-3 w-3 flex-shrink-0" />}
@@ -125,6 +142,14 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
               </span>
             )}
           </div>
+
+          {/* Last seen timestamp for DMs */}
+          {lastSeenText && !hasUnread && (
+            <div className="flex items-center gap-1 mt-0.5">
+              <Clock className="h-2.5 w-2.5 text-gray-300 dark:text-gray-600" />
+              <span className="text-[10px] text-gray-300 dark:text-gray-600">{lastSeenText}</span>
+            </div>
+          )}
         </div>
       </Link>
     </motion.div>

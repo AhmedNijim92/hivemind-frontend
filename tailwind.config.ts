@@ -88,6 +88,10 @@ const config: Config = {
         "float": "float 3s ease-in-out infinite",
         "heart-burst": "heartBurst 0.4s cubic-bezier(0.17, 0.89, 0.32, 1.49)",
         "number-roll": "numberRoll 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
+        "slide-in-right": "slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+        "slide-in-left": "slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+        "wiggle": "wiggle 0.5s ease-in-out",
+        "pop": "pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
       },
       keyframes: {
         fadeIn: {
@@ -145,6 +149,24 @@ const config: Config = {
         numberRoll: {
           "0%": { transform: "translateY(100%)", opacity: "0" },
           "100%": { transform: "translateY(0)", opacity: "1" },
+        },
+        slideInRight: {
+          "0%": { transform: "translateX(100%)", opacity: "0" },
+          "100%": { transform: "translateX(0)", opacity: "1" },
+        },
+        slideInLeft: {
+          "0%": { transform: "translateX(-100%)", opacity: "0" },
+          "100%": { transform: "translateX(0)", opacity: "1" },
+        },
+        wiggle: {
+          "0%, 100%": { transform: "rotate(0deg)" },
+          "25%": { transform: "rotate(-3deg)" },
+          "75%": { transform: "rotate(3deg)" },
+        },
+        pop: {
+          "0%": { transform: "scale(0.8)", opacity: "0" },
+          "50%": { transform: "scale(1.1)" },
+          "100%": { transform: "scale(1)", opacity: "1" },
         },
       },
       transitionTimingFunction: {
