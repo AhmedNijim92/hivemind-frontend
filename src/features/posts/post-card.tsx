@@ -30,12 +30,12 @@ export function PostCard({ post, index = 0 }: PostCardProps) {
   const haptic = useHaptic();
 
   const handleLike = useCallback(() => {
-    if (liked) return;
-    setLiked(true);
+    const wasLiked = liked;
+    setLiked(!wasLiked);
     haptic.impact();
     likePost.mutate(
       { groupId: post.groupId, postId: post.postId },
-      { onError: () => { setLiked(false); toast.error("You already liked this post"); } }
+      { onError: () => { setLiked(wasLiked); toast.error("Failed to update like"); } }
     );
   }, [liked, likePost, post.groupId, post.postId, haptic]);
 
