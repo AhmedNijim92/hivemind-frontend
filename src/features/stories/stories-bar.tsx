@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Plus, Camera } from "lucide-react";
 import { motion } from "framer-motion";
 import { Avatar } from "@/components/ui/avatar";
@@ -17,7 +18,10 @@ export function StoriesBar() {
   const [createOpen, setCreateOpen] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [activeGroupIndex, setActiveGroupIndex] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const openViewer = (index: number) => { setActiveGroupIndex(index); setViewerOpen(true); };
 
@@ -102,9 +106,14 @@ export function StoriesBar() {
         </div>
       </div>
 
-      <CreateStoryModal open={createOpen} onClose={() => setCreateOpen(false)} />
-      {viewerOpen && groups.length > 0 && (
-        <StoryViewer groups={groups} initialGroupIndex={activeGroupIndex} onClose={() => setViewerOpen(false)} />
+      {/* Portal modals to document.body to escape PageTransition transform stacking context */}
+      {mounted && createPortal(
+        <CreateStoryModal open={createOpen} onClose={() => setCreateOpen(false)} />,
+        document.body
+      )}
+      {mounted && viewerOpen && groups.length > 0 && createPortal(
+        <StoryViewer groups={groups} initialGroupIndex={activeGroupIndex} onClose={() => setViewerOpen(false)} />,
+        document.body
       )}
     </>
   );
