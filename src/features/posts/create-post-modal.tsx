@@ -196,8 +196,10 @@ export function CreatePostModal() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors ${
+            >
+              <div
+                {...getRootProps()}
+                className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors ${
                 isDragActive
                   ? "border-brand-500 bg-brand-50 dark:bg-brand-950/20"
                   : "border-gray-200 dark:border-gray-700 hover:border-brand-400"
@@ -211,6 +213,7 @@ export function CreatePostModal() {
               <p className="text-xs text-gray-300 dark:text-gray-600 mt-0.5">
                 Max 50MB
               </p>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
