@@ -11,6 +11,7 @@ import { useStories } from "@/hooks/use-stories";
 import { CreateStoryModal } from "./create-story-modal";
 import { StoryViewer } from "./story-viewer";
 import { cn } from "@/utils/cn";
+import toast from "react-hot-toast";
 
 export function StoriesBar() {
   const userId = useAuthStore((s) => s.userId);
@@ -106,11 +107,13 @@ export function StoriesBar() {
               );
             })}
 
-          {/* No stories hint */}
-          {groups.length === 0 && !activeGroup && (
+          {/* No active group — show add story hint that prompts group selection */}
+          {!activeGroup && (
             <motion.div
               whileTap={{ scale: 0.95 }}
-              onClick={() => setCreateOpen(true)}
+              onClick={() => {
+                toast.error("Select a group first to create a story");
+              }}
               role="button"
               tabIndex={0}
               className="flex flex-col items-center gap-1.5 min-w-[68px] cursor-pointer"
