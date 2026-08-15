@@ -53,7 +53,7 @@ export function StoriesBar() {
               {activeGroup && hasStoryForGroup ? (
                 <div className="p-[2.5px] rounded-full bg-gradient-to-tr from-brand-500 to-pink-500">
                   <div className="rounded-full p-[2px] bg-white dark:bg-surface-dark">
-                    <Avatar name={activeGroup.name} size="lg" />
+                    <Avatar name={activeGroup.name} src={activeGroup.profilePictureUrl} size="lg" />
                   </div>
                 </div>
               ) : (
@@ -94,7 +94,7 @@ export function StoriesBar() {
                       : "bg-gray-200 dark:bg-gray-700"
                   )}>
                     <div className="rounded-full p-[2px] bg-white dark:bg-surface-dark">
-                      <Avatar name={group.groupName} size="lg" />
+                      <Avatar name={group.groupName} src={group.groupAvatar} size="lg" />
                     </div>
                   </div>
                   <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate w-[68px] text-center font-medium leading-tight">
