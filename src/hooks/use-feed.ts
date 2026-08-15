@@ -41,6 +41,7 @@ export function usePublicFeed() {
   const enrichedPosts: PostDto[] | undefined = query.data?.map((post) => {
     let groupName = post.groupName;
     let authorName = post.authorName;
+    let authorProfilePictureUrl = post.authorProfilePictureUrl ?? null;
 
     // Enrich group name
     if (!groupName) {
@@ -52,12 +53,17 @@ export function usePublicFeed() {
       }
     }
 
-    // Fix "Unknown" author for own posts
-    if (authorName === "Unknown" && post.authorId === userId && currentUser?.name) {
-      authorName = currentUser.name;
+    // Fix "Unknown" author for own posts and enrich profile picture
+    if (post.authorId === userId && currentUser) {
+      if (authorName === "Unknown" && currentUser.name) {
+        authorName = currentUser.name;
+      }
+      if (!authorProfilePictureUrl && currentUser.profilePictureUrl) {
+        authorProfilePictureUrl = currentUser.profilePictureUrl;
+      }
     }
 
-    return { ...post, groupName, authorName };
+    return { ...post, groupName, authorName, authorProfilePictureUrl };
   });
 
   return { ...query, data: enrichedPosts };

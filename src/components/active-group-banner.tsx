@@ -31,11 +31,17 @@ export function ActiveGroupBanner({ className }: { className?: string }) {
         className
       )}
     >
-      <div className="h-7 w-7 rounded-lg bg-gradient-brand flex items-center justify-center flex-shrink-0">
-        <span className="text-white font-bold text-xs">
-          {activeGroup.name[0].toUpperCase()}
-        </span>
-      </div>
+      {activeGroup.profilePictureUrl ? (
+        <div className="h-7 w-7 rounded-lg overflow-hidden flex-shrink-0 relative">
+          <img src={activeGroup.profilePictureUrl} alt={activeGroup.name} className="object-cover w-full h-full" />
+        </div>
+      ) : (
+        <div className="h-7 w-7 rounded-lg bg-gradient-brand flex items-center justify-center flex-shrink-0">
+          <span className="text-white font-bold text-xs">
+            {activeGroup.name[0].toUpperCase()}
+          </span>
+        </div>
+      )}
 
       <div className="flex-1 min-w-0">
         <p className="text-xs font-semibold text-brand-700 dark:text-brand-300 truncate">

@@ -109,11 +109,17 @@ export default function FeedPage() {
             animate={{ opacity: 1, y: 0 }}
             className="card p-4 flex items-center gap-3 border border-brand-100/50 dark:border-brand-800/20 bg-gradient-to-r from-brand-50/50 to-transparent dark:from-brand-950/10 dark:to-transparent"
           >
-            <div className="h-10 w-10 rounded-xl bg-gradient-brand flex items-center justify-center flex-shrink-0 shadow-md shadow-brand-500/20">
-              <span className="text-white font-bold text-sm">
-                {activeGroup.name[0].toUpperCase()}
-              </span>
-            </div>
+            {activeGroup.profilePictureUrl ? (
+              <div className="h-10 w-10 rounded-xl overflow-hidden flex-shrink-0 shadow-md shadow-brand-500/20 relative">
+                <img src={activeGroup.profilePictureUrl} alt={activeGroup.name} className="object-cover w-full h-full" />
+              </div>
+            ) : (
+              <div className="h-10 w-10 rounded-xl bg-gradient-brand flex items-center justify-center flex-shrink-0 shadow-md shadow-brand-500/20">
+                <span className="text-white font-bold text-sm">
+                  {activeGroup.name[0].toUpperCase()}
+                </span>
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                 {activeGroup.name}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Users, Pin, BellOff, Check, CheckCheck, Clock, Image } from "lucide-react";
+import { Pin, BellOff, Check, CheckCheck, Clock, Image } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/utils/cn";
 import { Avatar } from "@/components/ui/avatar";
@@ -85,9 +85,7 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
         {/* Avatar with online dot */}
         <div className="relative flex-shrink-0">
           {isGroup ? (
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center">
-              <Users className="h-5 w-5 text-white" />
-            </div>
+            <Avatar name={displayName} size="md" className="h-12 w-12" src={conversation.groupAvatar ?? undefined} />
           ) : (
             <Avatar src={displayAvatar} name={displayName} size="md" className="h-12 w-12" />
           )}

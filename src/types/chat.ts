@@ -21,6 +21,7 @@ export interface Conversation {
   participantAvatars: Record<string, string | null>;
   groupId?: string;
   groupName?: string;
+  groupAvatar?: string | null;
   lastMessage: ChatMessage | null;
   updatedAt: string;
   unreadCount: number;

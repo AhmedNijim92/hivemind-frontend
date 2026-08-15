@@ -393,7 +393,7 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
                           className="rounded-full"
                         >
                           <div className={`h-16 w-16 sm:h-20 sm:w-20 rounded-full ring-2 ${isPHost ? "ring-yellow-400/50" : "ring-white/[0.06]"} overflow-hidden`}>
-                            <Avatar name={isSelf ? currentUser?.name : undefined} size="xl" className="h-full w-full text-xl" />
+                            <Avatar name={isSelf ? currentUser?.name : undefined} src={isSelf ? currentUser?.profilePictureUrl : undefined} size="xl" className="h-full w-full text-xl" />
                           </div>
                         </motion.div>
                       </div>

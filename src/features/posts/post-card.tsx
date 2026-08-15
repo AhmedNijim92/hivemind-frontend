@@ -78,9 +78,7 @@ export function PostCard({ post, index = 0 }: PostCardProps) {
       {/* Header */}
       <div className="flex items-start gap-3 px-5 pt-5 pb-2">
         <Link href={`/groups/${post.groupId}`}>
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-sm">{post.groupName?.[0]?.toUpperCase() ?? "G"}</span>
-          </div>
+          <Avatar name={post.groupName ?? "Group"} size="md" />
         </Link>
         <div className="flex-1 min-w-0">
           {/* Group name — which group this post belongs to */}
@@ -89,7 +87,10 @@ export function PostCard({ post, index = 0 }: PostCardProps) {
           </Link>
           {/* Author + time */}
           <div className="flex items-center gap-1.5 mt-0.5">
-            <Link href={`/profile/${post.authorId}`} className="hover:underline">
+            <Link href={`/profile/${post.authorId}`} className="hover:underline flex items-center gap-1">
+              {post.authorProfilePictureUrl && (
+                <Avatar name={post.authorName} size="xs" src={post.authorProfilePictureUrl} />
+              )}
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
                 {post.authorName && post.authorName !== "Unknown" ? post.authorName : post.groupName ?? "Group"}
               </span>
