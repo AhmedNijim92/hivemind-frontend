@@ -4,6 +4,7 @@ export interface PostDto {
   postId: string;
   groupId: string;
   groupName?: string;
+  groupProfilePictureUrl?: string | null;
   authorId: string;
   authorName: string;
   authorProfilePictureUrl?: string | null;

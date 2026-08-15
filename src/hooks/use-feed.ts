@@ -40,16 +40,21 @@ export function usePublicFeed() {
   // Enrich posts with group names and fix "Unknown" author for own posts
   const enrichedPosts: PostDto[] | undefined = query.data?.map((post) => {
     let groupName = post.groupName;
+    let groupProfilePictureUrl = post.groupProfilePictureUrl ?? null;
     let authorName = post.authorName;
     let authorProfilePictureUrl = post.authorProfilePictureUrl ?? null;
 
-    // Enrich group name
-    if (!groupName) {
+    // Enrich group name and profile picture
+    if (!groupName || !groupProfilePictureUrl) {
       if (post.groupId === activeGroupId && activeGroup) {
-        groupName = activeGroup.name;
+        groupName = groupName || activeGroup.name;
+        groupProfilePictureUrl = groupProfilePictureUrl || activeGroup.profilePictureUrl || null;
       } else {
         const matched = myGroups?.find((g) => g.groupId === post.groupId);
-        groupName = matched?.name;
+        if (matched) {
+          groupName = groupName || matched.name;
+          groupProfilePictureUrl = groupProfilePictureUrl || matched.profilePictureUrl || null;
+        }
       }
     }
 
@@ -63,7 +68,7 @@ export function usePublicFeed() {
       }
     }
 
-    return { ...post, groupName, authorName, authorProfilePictureUrl };
+    return { ...post, groupName, groupProfilePictureUrl, authorName, authorProfilePictureUrl };
   });
 
   return { ...query, data: enrichedPosts };

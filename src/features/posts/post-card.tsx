@@ -78,7 +78,7 @@ export function PostCard({ post, index = 0 }: PostCardProps) {
       {/* Header */}
       <div className="flex items-start gap-3 px-5 pt-5 pb-2">
         <Link href={`/groups/${post.groupId}`}>
-          <Avatar name={post.groupName ?? "Group"} size="md" />
+          <Avatar name={post.groupName ?? "Group"} size="md" src={post.groupProfilePictureUrl} />
         </Link>
         <div className="flex-1 min-w-0">
           {/* Group name — which group this post belongs to */}

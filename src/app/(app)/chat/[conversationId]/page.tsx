@@ -167,9 +167,7 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
 
         <div className="relative flex-shrink-0">
           {isGroup ? (
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center">
-              <Users className="h-5 w-5 text-white" />
-            </div>
+            <Avatar name={displayName} src={conversation?.groupAvatar ?? undefined} size="md" />
           ) : (
             <>
               <Avatar src={displayAvatar} name={displayName} size="md" />
@@ -280,7 +278,7 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
                   message={message}
                   isSent={isSent}
                   showAvatar={showAvatar}
-                  avatarSlot={showAvatar ? <Avatar name={message.senderName} size="xs" className="mt-auto flex-shrink-0" /> : undefined}
+                  avatarSlot={showAvatar ? <Avatar name={message.senderName} src={conversation?.participantAvatars[message.senderId] ?? undefined} size="xs" className="mt-auto flex-shrink-0" /> : undefined}
                   onReply={handleReply}
                 />
               </div>

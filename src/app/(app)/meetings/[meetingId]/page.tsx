@@ -538,7 +538,7 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
                 )}
                 {chatMessages.map((msg) => (
                   <motion.div key={msg.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} className="flex gap-2">
-                    <Avatar name={msg.senderName} size="xs" />
+                    <Avatar name={msg.senderName} src={msg.senderId === userId ? currentUser?.profilePictureUrl ?? undefined : undefined} size="xs" />
                     <div>
                       <span className="text-[10px] font-semibold text-white/50">{msg.senderName} <span className="text-white/15 font-normal">{new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></span>
                       <p className="text-[12px] text-white/40 leading-relaxed">{msg.content}</p>
