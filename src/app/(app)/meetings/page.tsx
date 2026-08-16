@@ -13,7 +13,7 @@ import { useMyGroups } from "@/hooks/use-groups";
 import { useGroupMeetings } from "@/hooks/use-meetings";
 import { usePageTitle } from "@/hooks/use-page-title";
 
-function GroupMeetings({ groupId, groupName }: { groupId: string; groupName: string }) {
+function GroupMeetings({ groupId, groupName, groupProfilePictureUrl }: { groupId: string; groupName: string; groupProfilePictureUrl?: string | null }) {
   const { data: meetings, isLoading } = useGroupMeetings(groupId);
   const [showCreate, setShowCreate] = useState(false);
 
@@ -36,9 +36,15 @@ function GroupMeetings({ groupId, groupName }: { groupId: string; groupName: str
       {/* Group header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-sm">
-            <span className="text-white font-bold text-xs">{groupName[0]?.toUpperCase()}</span>
-          </div>
+          {groupProfilePictureUrl ? (
+            <div className="h-9 w-9 rounded-xl overflow-hidden shadow-sm relative">
+              <img src={groupProfilePictureUrl} alt={groupName} className="object-cover w-full h-full" />
+            </div>
+          ) : (
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-sm">
+              <span className="text-white font-bold text-xs">{groupName[0]?.toUpperCase()}</span>
+            </div>
+          )}
           <div>
             <h2 className="font-semibold text-gray-900 dark:text-white text-sm">{groupName}</h2>
             <p className="text-[11px] text-gray-400">{meetings?.length ?? 0} rooms</p>
@@ -120,7 +126,7 @@ export default function MeetingsPage() {
         ) : (
           <div className="space-y-8">
             {groups?.map((group) => (
-              <GroupMeetings key={group.groupId} groupId={group.groupId} groupName={group.name} />
+              <GroupMeetings key={group.groupId} groupId={group.groupId} groupName={group.name} groupProfilePictureUrl={group.profilePictureUrl} />
             ))}
           </div>
         )}
