@@ -4,20 +4,49 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { useChatStore } from "@/store/chat-store";
 import { useAuthStore } from "@/store/auth-store";
+import { useCurrentUser } from "@/hooks/use-user";
+import { useMyGroups } from "@/hooks/use-groups";
 import { chatService, ChatMessageDto } from "@/services/chat.service";
 import type { Conversation, ChatMessage } from "@/types/chat";
 
-/** Returns sorted conversations for the current user */
+/** Returns sorted conversations for the current user, enriched with latest avatars */
 export function useConversations() {
   const userId = useAuthStore((s) => s.userId);
   const conversations = useChatStore((s) => s.conversations);
   const getConversations = useChatStore((s) => s.getConversations);
+  const { data: currentUser } = useCurrentUser();
+  const { data: myGroups } = useMyGroups();
 
   return useMemo(() => {
     if (!userId) return [];
-    return getConversations(userId);
+    const convs = getConversations(userId);
+
+    return convs.map((c) => {
+      let updated = c;
+
+      // Enrich current user's avatar
+      if (currentUser?.profilePictureUrl && c.participantAvatars[userId] !== currentUser.profilePictureUrl) {
+        updated = {
+          ...updated,
+          participantAvatars: {
+            ...updated.participantAvatars,
+            [userId]: currentUser.profilePictureUrl,
+          },
+        };
+      }
+
+      // Enrich group avatar from myGroups
+      if (updated.type === "group" && updated.groupId && !updated.groupAvatar) {
+        const matched = myGroups?.find((g) => g.groupId === updated.groupId);
+        if (matched?.profilePictureUrl) {
+          updated = { ...updated, groupAvatar: matched.profilePictureUrl };
+        }
+      }
+
+      return updated;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, conversations]);
+  }, [userId, conversations, currentUser?.profilePictureUrl, myGroups]);
 }
 
 /** Returns messages for a specific conversation — polls server when active */
