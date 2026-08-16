@@ -82,7 +82,7 @@ export function CommentsPanel({ postId, groupId }: CommentsPanelProps) {
                   className="flex gap-2.5 group"
                 >
                   <Link href={`/profile/${c.authorId}`} className="flex-shrink-0 mt-0.5">
-                    <Avatar name={displayName !== "Member" ? displayName : undefined} size="xs" />
+                    <Avatar name={displayName !== "Member" ? displayName : undefined} src={c.authorId === userId ? currentUser?.profilePictureUrl ?? undefined : undefined} size="xs" />
                   </Link>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm">

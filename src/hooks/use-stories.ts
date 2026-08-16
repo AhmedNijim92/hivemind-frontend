@@ -4,6 +4,7 @@ import { useStoryStore } from "@/store/story-store";
 import { useAuthStore } from "@/store/auth-store";
 import { useCurrentUser } from "@/hooks/use-user";
 import { useGroupContextStore } from "@/store/group-context-store";
+import { useMyGroups } from "@/hooks/use-groups";
 import { mediaService } from "@/services/media.service";
 import type { Story, StoryGroup } from "@/types/story";
 
@@ -20,6 +21,7 @@ export function useStories(): {
   const userId = useAuthStore((s) => s.userId);
   const removeExpired = useStoryStore((s) => s.removeExpired);
   const getGroupedStories = useStoryStore((s) => s.getGroupedStories);
+  const { data: myGroups } = useMyGroups();
 
   useEffect(() => {
     removeExpired();
@@ -27,7 +29,16 @@ export function useStories(): {
 
   const groups = userId ? getGroupedStories(userId) : [];
 
-  return { groups, isLoading: false };
+  // Enrich groupAvatar from myGroups data
+  const enrichedGroups = groups.map((g) => {
+    if (g.groupAvatar) return g;
+    const matched = myGroups?.find((mg) => mg.groupId === g.groupId);
+    return matched?.profilePictureUrl
+      ? { ...g, groupAvatar: matched.profilePictureUrl }
+      : g;
+  });
+
+  return { groups: enrichedGroups, isLoading: false };
 }
 
 /**
