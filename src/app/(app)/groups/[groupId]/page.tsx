@@ -3,6 +3,7 @@
 import { use, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useQuery } from "@tanstack/react-query";
 import {
   Users, Lock, Globe, Plus, Video, ArrowLeft, UserMinus, UserPlus,
   FileText, Calendar, MessageCircle, Share2, Crown, Shield, User,
@@ -26,10 +27,12 @@ import { useGroupFollow, useJoinRequest, usePendingRequests } from "@/hooks/use-
 import { useUIStore } from "@/store/ui-store";
 import { useGroupContextStore } from "@/store/group-context-store";
 import { useAuthStore } from "@/store/auth-store";
+import { useCurrentUser } from "@/hooks/use-user";
 import { formatNumber, timeAgo } from "@/utils/format";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { mediaService } from "@/services/media.service";
 import { groupService } from "@/services/group.service";
+import { userService } from "@/services/user.service";
 import toast from "react-hot-toast";
 
 type Tab = "posts" | "chat" | "meetings" | "members" | "requests";
@@ -51,7 +54,30 @@ export default function GroupDetailPage({ params }: { params: Promise<{ groupId:
   const leaveGroup = useLeaveGroup();
   const { openCreatePost } = useUIStore();
   const userId = useAuthStore((s) => s.userId);
+  const { data: currentUser } = useCurrentUser();
   const openGroupChat = useOpenGroupChat();
+
+  // Fetch member profiles to get names and avatars
+  const { data: memberProfiles } = useQuery({
+    queryKey: ["group-member-profiles", groupId, members?.map((m) => m.userId)],
+    queryFn: async () => {
+      if (!members) return {};
+      const profiles: Record<string, { name: string; profilePictureUrl: string | null }> = {};
+      await Promise.all(
+        members.map(async (m) => {
+          try {
+            const p = await userService.getProfile(m.userId);
+            profiles[m.userId] = { name: p.name, profilePictureUrl: p.profilePictureUrl ?? null };
+          } catch {
+            profiles[m.userId] = { name: m.userId.slice(0, 8), profilePictureUrl: null };
+          }
+        })
+      );
+      return profiles;
+    },
+    enabled: !!members && members.length > 0,
+    staleTime: 1000 * 60 * 5,
+  });
 
   // Group social features
   const { isFollowing, followerCount, toggle: toggleFollow } = useGroupFollow(groupId);
@@ -76,7 +102,11 @@ export default function GroupDetailPage({ params }: { params: Promise<{ groupId:
     const ids = members.map((m) => m.userId);
     const names: Record<string, string> = {};
     const avatars: Record<string, string | null> = {};
-    members.forEach((m) => { names[m.userId] = m.userId === userId ? "You" : m.userId; avatars[m.userId] = null; });
+    members.forEach((m) => {
+      const profile = memberProfiles?.[m.userId];
+      names[m.userId] = m.userId === userId ? (currentUser?.name ?? "You") : (profile?.name ?? m.userId.slice(0, 8));
+      avatars[m.userId] = profile?.profilePictureUrl ?? (m.userId === userId ? currentUser?.profilePictureUrl ?? null : null);
+    });
     openGroupChat(groupId, group.name, ids, names, avatars);
   };
   const handleShare = async () => {
@@ -233,11 +263,16 @@ export default function GroupDetailPage({ params }: { params: Promise<{ groupId:
             {members && members.length > 0 && (
               <div className="flex items-center gap-2 mt-4">
                 <div className="flex -space-x-2">
-                  {members.slice(0, 6).map((m) => (
-                    <div key={m.userId} className="ring-2 ring-white dark:ring-surface-dark-2 rounded-full">
-                      <Avatar name={m.userId} size="xs" />
-                    </div>
-                  ))}
+                  {members.slice(0, 6).map((m) => {
+                    const profile = memberProfiles?.[m.userId];
+                    const mName = profile?.name ?? (m.userId === userId ? currentUser?.name : undefined);
+                    const mAvatar = profile?.profilePictureUrl ?? (m.userId === userId ? currentUser?.profilePictureUrl : undefined);
+                    return (
+                      <div key={m.userId} className="ring-2 ring-white dark:ring-surface-dark-2 rounded-full">
+                        <Avatar name={mName} src={mAvatar ?? undefined} size="xs" />
+                      </div>
+                    );
+                  })}
                   {members.length > 6 && (
                     <div className="h-6 w-6 rounded-full bg-gray-200 dark:bg-gray-700 ring-2 ring-white dark:ring-surface-dark-2 flex items-center justify-center">
                       <span className="text-[9px] font-bold text-gray-500">+{members.length - 6}</span>
@@ -379,12 +414,15 @@ export default function GroupDetailPage({ params }: { params: Promise<{ groupId:
                     members?.map((member) => {
                       const RoleIcon = roleIcon[member.role as keyof typeof roleIcon] ?? User;
                       const color = roleColor[member.role as keyof typeof roleColor] ?? "text-gray-400";
+                      const profile = memberProfiles?.[member.userId];
+                      const memberName = profile?.name ?? (member.userId === userId ? currentUser?.name ?? "You" : member.userId.slice(0, 8) + "…");
+                      const memberAvatar = profile?.profilePictureUrl ?? (member.userId === userId ? currentUser?.profilePictureUrl : null);
                       return (
                         <Link key={member.userId} href={`/profile/${member.userId}`} className="card p-4 flex items-center gap-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-                          <Avatar name={member.userId} size="md" />
+                          <Avatar name={memberName} src={memberAvatar ?? undefined} size="md" />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{member.userId.slice(0, 8)}…</p>
+                              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{memberName}</p>
                               <RoleIcon className={`h-3.5 w-3.5 flex-shrink-0 ${color}`} />
                             </div>
                             <p className="text-xs text-gray-400">Joined {timeAgo(member.joinedAt)}</p>
