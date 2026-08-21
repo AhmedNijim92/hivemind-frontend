@@ -113,7 +113,6 @@ export function MessageBubble({ message, isSent, showAvatar, avatarSlot, onReply
         className={cn("flex gap-2 group w-full", isSent ? "justify-end" : "justify-start")}
         onMouseEnter={() => setShowActions(true)}
         onMouseLeave={() => { setShowActions(false); setShowReactions(false); }}
-        onTouchStart={() => setShowActions(true)}
       >
         {/* Avatar for received messages */}
         {!isSent && showAvatar && avatarSlot}
@@ -131,6 +130,7 @@ export function MessageBubble({ message, isSent, showAvatar, avatarSlot, onReply
                   "absolute -top-8 flex items-center gap-1 bg-white dark:bg-surface-dark-2 rounded-full shadow-lg border border-gray-100 dark:border-gray-800 px-1 py-0.5 z-10",
                   isSent ? "right-0" : "left-0"
                 )}
+                onClick={(e) => e.stopPropagation()}
               >
                 <button
                   onClick={() => setShowReactions(!showReactions)}
@@ -175,14 +175,17 @@ export function MessageBubble({ message, isSent, showAvatar, avatarSlot, onReply
                   "absolute -top-16 flex items-center gap-0.5 bg-white dark:bg-surface-dark-2 rounded-full shadow-xl border border-gray-100 dark:border-gray-800 px-2 py-1.5 z-20",
                   isSent ? "right-0" : "left-0"
                 )}
+                onClick={(e) => e.stopPropagation()}
               >
                 {QUICK_REACTIONS.map((emoji) => (
                   <button
                     key={emoji}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       haptic.tap();
                       if (userId) reactToMessage(message.conversationId, message.id, emoji, userId);
                       setShowReactions(false);
+                      setShowActions(false);
                     }}
                     className="text-lg hover:scale-125 transition-transform p-0.5"
                   >
@@ -196,12 +199,12 @@ export function MessageBubble({ message, isSent, showAvatar, avatarSlot, onReply
           {/* Bubble */}
           <div
             className={cn(
-              "px-4 py-2.5 rounded-2xl relative",
+              "px-4 py-2.5 rounded-2xl relative cursor-pointer",
               isSent
                 ? "bg-brand-500 text-white rounded-br-md"
                 : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-md"
             )}
-            onClick={() => setShowActions(!showActions)}
+            onClick={(e) => { e.stopPropagation(); setShowActions(!showActions); }}
           >
             {/* Voice message or Image */}
             {message.imageUrl && message.content.startsWith("🎤") ? (
