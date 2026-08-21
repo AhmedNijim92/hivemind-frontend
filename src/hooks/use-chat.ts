@@ -71,6 +71,7 @@ export function useConversations() {
 export function useMessages(conversationId: string) {
   const userId = useAuthStore((s) => s.userId);
   const localMessages = useChatStore((s) => s.messages[conversationId] ?? []);
+  const reactions = useChatStore((s) => s.reactions);
 
   // Poll server for messages — only when this hook is mounted (user is viewing this chat)
   const { data: serverMessages } = useQuery({
@@ -85,27 +86,25 @@ export function useMessages(conversationId: string) {
   // Merge: prefer server messages if available, fall back to local
   return useMemo(() => {
     if (serverMessages && serverMessages.length > 0) {
-      // Build a map of local reactions and deleted state by message id
-      const localMap = new Map(localMessages.map((m) => [m.id, m]));
-
-      return serverMessages.map((m): ChatMessage => {
-        const local = localMap.get(m.id);
-        return {
-          id: m.id,
-          conversationId: m.conversationId,
-          senderId: m.senderId,
-          senderName: m.senderName,
-          content: m.content,
-          imageUrl: m.imageUrl,
-          createdAt: m.timestamp,
-          read: true,
-          reactions: local?.reactions ?? {},
-          deleted: local?.deleted ?? false,
-        };
-      });
+      return serverMessages.map((m): ChatMessage => ({
+        id: m.id,
+        conversationId: m.conversationId,
+        senderId: m.senderId,
+        senderName: m.senderName,
+        content: m.content,
+        imageUrl: m.imageUrl,
+        createdAt: m.timestamp,
+        read: true,
+        reactions: reactions[m.id] ?? {},
+        deleted: false,
+      }));
     }
-    return localMessages;
-  }, [serverMessages, localMessages]);
+    // For local messages, also apply reactions from the reactions map
+    return localMessages.map((m) => ({
+      ...m,
+      reactions: reactions[m.id] ?? m.reactions,
+    }));
+  }, [serverMessages, localMessages, reactions]);
 }
 
 /** Returns a function to send a message — saves to server + local store */

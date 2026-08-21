@@ -19,6 +19,8 @@ function makeGroupChatId(groupId: string): string {
 interface ChatStore {
   conversations: Conversation[];
   messages: Record<string, ChatMessage[]>;
+  /** Reactions stored by messageId for persistence across server syncs */
+  reactions: Record<string, Record<string, string[]>>;
 
   getOrCreateDm: (currentUserId: string, targetUserId: string, targetName: string, targetAvatar: string | null) => Conversation;
   getOrCreateGroupChat: (groupId: string, groupName: string, memberIds: string[], memberNames: Record<string, string>, memberAvatars: Record<string, string | null>) => Conversation;
@@ -40,6 +42,7 @@ export const useChatStore = create<ChatStore>()(
     (set, get) => ({
       conversations: [],
       messages: {},
+      reactions: {},
 
       getOrCreateDm: (currentUserId, targetUserId, targetName, targetAvatar) => {
         const state = get();
@@ -106,23 +109,17 @@ export const useChatStore = create<ChatStore>()(
       },
 
       reactToMessage: (conversationId, messageId, emoji, userId) => {
-        set((s) => ({
-          messages: {
-            ...s.messages,
-            [conversationId]: (s.messages[conversationId] ?? []).map((m) => {
-              if (m.id !== messageId) return m;
-              const reactions = { ...m.reactions };
-              const users = reactions[emoji] ?? [];
-              if (users.includes(userId)) {
-                reactions[emoji] = users.filter((id) => id !== userId);
-                if (reactions[emoji].length === 0) delete reactions[emoji];
-              } else {
-                reactions[emoji] = [...users, userId];
-              }
-              return { ...m, reactions };
-            }),
-          },
-        }));
+        set((s) => {
+          const msgReactions = { ...(s.reactions[messageId] ?? {}) };
+          const users = msgReactions[emoji] ?? [];
+          if (users.includes(userId)) {
+            msgReactions[emoji] = users.filter((id) => id !== userId);
+            if (msgReactions[emoji].length === 0) delete msgReactions[emoji];
+          } else {
+            msgReactions[emoji] = [...users, userId];
+          }
+          return { reactions: { ...s.reactions, [messageId]: msgReactions } };
+        });
       },
 
       markConversationRead: (conversationId, _userId) => {
