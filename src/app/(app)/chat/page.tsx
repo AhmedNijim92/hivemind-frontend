@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { MessageCircle, Plus, Search, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
 import { TopBar } from "@/components/layout/top-bar";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -14,6 +15,7 @@ import { usePageTitle } from "@/hooks/use-page-title";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useHaptic } from "@/hooks/use-haptic";
 import { useAuthStore } from "@/store/auth-store";
+import { userService } from "@/services/user.service";
 
 export default function ChatPage() {
   usePageTitle("Messages");
@@ -23,6 +25,24 @@ export default function ChatPage() {
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 200);
+  const queryClient = useQueryClient();
+
+  // Pre-fetch profiles for DM participants to get their avatars
+  useEffect(() => {
+    if (!userId) return;
+    conversations.forEach((c) => {
+      if (c.type !== "group") {
+        const otherUserId = c.participantIds.find((id) => id !== userId);
+        if (otherUserId && !c.participantAvatars[otherUserId]) {
+          queryClient.prefetchQuery({
+            queryKey: ["user", otherUserId],
+            queryFn: () => userService.getProfile(otherUserId),
+            staleTime: 1000 * 60 * 5,
+          });
+        }
+      }
+    });
+  }, [conversations, userId, queryClient]);
 
   const filtered = useMemo(() => {
     if (!debouncedSearch.trim()) return conversations;

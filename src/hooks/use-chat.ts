@@ -16,6 +16,7 @@ export function useConversations() {
   const getConversations = useChatStore((s) => s.getConversations);
   const { data: currentUser } = useCurrentUser();
   const { data: myGroups } = useMyGroups();
+  const queryClient = useQueryClient();
 
   return useMemo(() => {
     if (!userId) return [];
@@ -33,6 +34,23 @@ export function useConversations() {
             [userId]: currentUser.profilePictureUrl,
           },
         };
+      }
+
+      // Enrich other participant's avatar from cached profile data (DMs)
+      if (updated.type !== "group") {
+        const otherUserId = updated.participantIds.find((id) => id !== userId);
+        if (otherUserId && !updated.participantAvatars[otherUserId]) {
+          const cachedProfile = queryClient.getQueryData<{ profilePictureUrl?: string | null }>(["user", otherUserId]);
+          if (cachedProfile?.profilePictureUrl) {
+            updated = {
+              ...updated,
+              participantAvatars: {
+                ...updated.participantAvatars,
+                [otherUserId]: cachedProfile.profilePictureUrl,
+              },
+            };
+          }
+        }
       }
 
       // Enrich group avatar from myGroups
