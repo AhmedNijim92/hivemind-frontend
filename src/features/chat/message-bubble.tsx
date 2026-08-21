@@ -8,10 +8,18 @@ import { timeAgo } from "@/utils/format";
 import { useAuthStore } from "@/store/auth-store";
 import { useChatStore } from "@/store/chat-store";
 import { useHaptic } from "@/hooks/use-haptic";
+import { VoiceMessagePlayer } from "@/components/ui/voice-message";
 import type { ChatMessage } from "@/types/chat";
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 const SWIPE_THRESHOLD = 60;
+
+/** Parse duration from voice message text like "🎤 Voice message (0:07)" */
+function parseDuration(text: string): number {
+  const match = text.match(/\((\d+):(\d+)\)/);
+  if (!match) return 5000;
+  return (parseInt(match[1]) * 60 + parseInt(match[2])) * 1000;
+}
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -193,9 +201,18 @@ export function MessageBubble({ message, isSent, showAvatar, avatarSlot, onReply
                 ? "bg-brand-500 text-white rounded-br-md"
                 : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-md"
             )}
+            onClick={() => setShowActions(!showActions)}
           >
-            {/* Image */}
-            {message.imageUrl && (
+            {/* Voice message or Image */}
+            {message.imageUrl && message.content.startsWith("🎤") ? (
+              <div className="mb-1">
+                <VoiceMessagePlayer
+                  durationMs={parseDuration(message.content)}
+                  audioUrl={message.imageUrl}
+                  isSent={isSent}
+                />
+              </div>
+            ) : message.imageUrl ? (
               <div className="mb-2 -mx-1 -mt-0.5">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -205,9 +222,12 @@ export function MessageBubble({ message, isSent, showAvatar, avatarSlot, onReply
                   loading="lazy"
                 />
               </div>
-            )}
+            ) : null}
 
-            <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+            {/* Text content — hide if it's only a voice label */}
+            {!(message.imageUrl && message.content.startsWith("🎤")) && (
+              <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+            )}
 
             {/* Time + read receipt */}
             <div className={cn("flex items-center gap-1 mt-1", isSent ? "justify-end" : "")}>
