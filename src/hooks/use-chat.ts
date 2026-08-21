@@ -85,18 +85,24 @@ export function useMessages(conversationId: string) {
   // Merge: prefer server messages if available, fall back to local
   return useMemo(() => {
     if (serverMessages && serverMessages.length > 0) {
-      return serverMessages.map((m): ChatMessage => ({
-        id: m.id,
-        conversationId: m.conversationId,
-        senderId: m.senderId,
-        senderName: m.senderName,
-        content: m.content,
-        imageUrl: m.imageUrl,
-        createdAt: m.timestamp,
-        read: true,
-        reactions: {},
-        deleted: false,
-      }));
+      // Build a map of local reactions and deleted state by message id
+      const localMap = new Map(localMessages.map((m) => [m.id, m]));
+
+      return serverMessages.map((m): ChatMessage => {
+        const local = localMap.get(m.id);
+        return {
+          id: m.id,
+          conversationId: m.conversationId,
+          senderId: m.senderId,
+          senderName: m.senderName,
+          content: m.content,
+          imageUrl: m.imageUrl,
+          createdAt: m.timestamp,
+          read: true,
+          reactions: local?.reactions ?? {},
+          deleted: local?.deleted ?? false,
+        };
+      });
     }
     return localMessages;
   }, [serverMessages, localMessages]);
