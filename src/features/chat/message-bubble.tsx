@@ -105,6 +105,7 @@ export function MessageBubble({ message, isSent, showAvatar, avatarSlot, onReply
         className={cn("flex gap-2 group w-full", isSent ? "justify-end" : "justify-start")}
         onMouseEnter={() => setShowActions(true)}
         onMouseLeave={() => { setShowActions(false); setShowReactions(false); }}
+        onTouchStart={() => setShowActions(true)}
       >
         {/* Avatar for received messages */}
         {!isSent && showAvatar && avatarSlot}

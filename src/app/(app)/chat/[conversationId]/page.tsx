@@ -15,7 +15,7 @@ import { PageTransition } from "@/components/ui/page-transition";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { VoiceRecorder } from "@/components/ui/voice-message";
 import { MessageBubble } from "@/features/chat/message-bubble";
-import { useMessages, useSendMessage } from "@/hooks/use-chat";
+import { useMessages, useSendMessage, useConversations } from "@/hooks/use-chat";
 import { useCurrentUser } from "@/hooks/use-user";
 import { useHaptic } from "@/hooks/use-haptic";
 import { useAuthStore } from "@/store/auth-store";
@@ -32,7 +32,7 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
   const userId = useAuthStore((s) => s.userId);
   const { data: currentUser } = useCurrentUser();
 
-  const conversation = useChatStore((s) => s.conversations.find((c) => c.id === conversationId));
+  const conversation = useConversations().find((c) => c.id === conversationId);
   const markConversationRead = useChatStore((s) => s.markConversationRead);
   const pinConversation = useChatStore((s) => s.pinConversation);
   const unpinConversation = useChatStore((s) => s.unpinConversation);
