@@ -130,12 +130,25 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
-  const handleVoiceSend = useCallback((audioBlob: Blob, durationMs: number) => {
+  const handleVoiceSend = useCallback(async (audioBlob: Blob, durationMs: number) => {
     haptic.impact();
     const senderName = currentUser?.name ?? "You";
-    // Send as text representation since we don't have audio upload yet
     const seconds = Math.floor(durationMs / 1000);
-    sendMessage(conversationId, senderName, `🎤 Voice message (${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, "0")})`);
+    const durationLabel = `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, "0")}`;
+
+    try {
+      // Upload audio blob to media service
+      const file = new File([audioBlob], "voice-message.webm", { type: "audio/webm" });
+      const uploaded = await mediaService.upload(file, undefined, "CHAT");
+      const audioUrl = `/api/v1/media/${uploaded.mediaId}/download`;
+
+      // Send as message with audio URL in imageUrl field
+      sendMessage(conversationId, senderName, `🎤 Voice message (${durationLabel})`, audioUrl);
+    } catch {
+      // Fallback: send as text if upload fails
+      sendMessage(conversationId, senderName, `🎤 Voice message (${durationLabel})`);
+      toast.error("Could not upload audio");
+    }
   }, [conversationId, currentUser?.name, sendMessage, haptic]);
 
   const handleReply = useCallback((message: { id: string; senderName: string; content: string }) => {
