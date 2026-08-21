@@ -131,6 +131,7 @@ export function MessageBubble({ message, isSent, showAvatar, avatarSlot, onReply
                   isSent ? "right-0" : "left-0"
                 )}
                 onClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
               >
                 <button
                   onClick={() => setShowReactions(!showReactions)}
@@ -176,6 +177,7 @@ export function MessageBubble({ message, isSent, showAvatar, avatarSlot, onReply
                   isSent ? "right-0" : "left-0"
                 )}
                 onClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
               >
                 {QUICK_REACTIONS.map((emoji) => (
                   <button
