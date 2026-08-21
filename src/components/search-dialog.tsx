@@ -196,7 +196,6 @@ export function SearchDialog({ open, onClose }: SearchDialogProps) {
                         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
                           {user.name}
                         </p>
-                        <p className="text-xs text-gray-400">{user.mobileNumber}</p>
                       </div>
                     </button>
                   ))}
