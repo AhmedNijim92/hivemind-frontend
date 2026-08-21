@@ -139,7 +139,7 @@ export default function ConversationPage({ params }: { params: Promise<{ convers
     try {
       // Upload audio blob to media service
       const file = new File([audioBlob], "voice-message.webm", { type: "audio/webm" });
-      const uploaded = await mediaService.upload(file, undefined, "CHAT");
+      const uploaded = await mediaService.upload(file, undefined, "POST");
       const audioUrl = `/api/v1/media/${uploaded.mediaId}/download`;
 
       // Send as message with audio URL in imageUrl field
