@@ -111,6 +111,16 @@ export const useChatStore = create<ChatStore>()(
       reactToMessage: (conversationId, messageId, emoji, userId) => {
         set((s) => {
           const msgReactions = { ...(s.reactions[messageId] ?? {}) };
+          
+          // Check if user already reacted with a different emoji — remove it first
+          for (const existingEmoji of Object.keys(msgReactions)) {
+            if (existingEmoji !== emoji && msgReactions[existingEmoji]?.includes(userId)) {
+              msgReactions[existingEmoji] = msgReactions[existingEmoji].filter((id) => id !== userId);
+              if (msgReactions[existingEmoji].length === 0) delete msgReactions[existingEmoji];
+            }
+          }
+
+          // Toggle the selected emoji
           const users = msgReactions[emoji] ?? [];
           if (users.includes(userId)) {
             msgReactions[emoji] = users.filter((id) => id !== userId);
