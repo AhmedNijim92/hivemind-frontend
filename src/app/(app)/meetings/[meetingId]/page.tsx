@@ -80,17 +80,28 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
         if (m.status === "ACTIVE") {
           await meetingService.joinMeeting(gId, meetingId).catch(() => {});
           // Get LiveKit token
-          const res = await apiClient.post(`/api/v1/meetings/${meetingId}/token`, { isHost: m.hostId === userId });
-          setLiveKitToken(res.data.token);
+          // Get LiveKit token from local API route (uses official SDK)
+          const tokenRes = await fetch("/api/livekit-token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              roomName: `meeting_${meetingId}`,
+              identity: userId,
+              name: currentUser?.name || "User",
+              isHost: m.hostId === userId,
+            }),
+          });
+          const tokenData = await tokenRes.json();
+          if (tokenData.token) {
+            setLiveKitToken(tokenData.token);
+          }
           // Get LiveKit URL from config endpoint
           try {
             const configRes = await fetch("/api/config");
             const config = await configRes.json();
-            setLiveKitUrl(config.livekitUrl || res.data.url);
+            setLiveKitUrl(config.livekitUrl || "wss://lookup-brick-debate-submit.trycloudflare.com");
           } catch {
-            // Fallback: same origin /livekit path
-            const origin = window.location.origin;
-            setLiveKitUrl(origin.replace("http://", "ws://").replace("https://", "wss://") + "/livekit");
+            setLiveKitUrl("wss://lookup-brick-debate-submit.trycloudflare.com");
           }
         }
       })
