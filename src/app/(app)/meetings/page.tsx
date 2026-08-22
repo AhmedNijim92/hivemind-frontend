@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/ui/page-transition";
 import { useMyGroups } from "@/hooks/use-groups";
 import { useGroupMeetings } from "@/hooks/use-meetings";
+import { useGroupContextStore } from "@/store/group-context-store";
 import { usePageTitle } from "@/hooks/use-page-title";
 
 function GroupMeetings({ groupId, groupName, groupProfilePictureUrl }: { groupId: string; groupName: string; groupProfilePictureUrl?: string | null }) {
@@ -104,6 +105,14 @@ function GroupMeetings({ groupId, groupName, groupProfilePictureUrl }: { groupId
 export default function MeetingsPage() {
   usePageTitle("Meetings");
   const { data: groups, isLoading: groupsLoading } = useMyGroups();
+  const activeGroup = useGroupContextStore((s) => s.activeGroup);
+
+  // Show active group first, then others
+  const sortedGroups = groups?.slice().sort((a, b) => {
+    if (a.groupId === activeGroup?.groupId) return -1;
+    if (b.groupId === activeGroup?.groupId) return 1;
+    return 0;
+  });
 
   return (
     <PageTransition>
@@ -112,7 +121,9 @@ export default function MeetingsPage() {
         {/* Page header */}
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Live Rooms</h1>
-          <p className="text-gray-400 text-sm mt-0.5">Start or join live rooms with your groups</p>
+          <p className="text-gray-400 text-sm mt-0.5">
+            {activeGroup ? `Showing rooms for ${activeGroup.name}` : "Start or join live rooms with your groups"}
+          </p>
         </motion.div>
 
         {groupsLoading ? (
@@ -125,9 +136,13 @@ export default function MeetingsPage() {
           <EmptyState icon={Video} title="No groups yet" description="Join a group to create live rooms." />
         ) : (
           <div className="space-y-8">
-            {groups?.map((group) => (
-              <GroupMeetings key={group.groupId} groupId={group.groupId} groupName={group.name} groupProfilePictureUrl={group.profilePictureUrl} />
-            ))}
+            {activeGroup ? (
+              <GroupMeetings key={activeGroup.groupId} groupId={activeGroup.groupId} groupName={activeGroup.name} groupProfilePictureUrl={activeGroup.profilePictureUrl} />
+            ) : (
+              sortedGroups?.map((group) => (
+                <GroupMeetings key={group.groupId} groupId={group.groupId} groupName={group.name} groupProfilePictureUrl={group.profilePictureUrl} />
+              ))
+            )}
           </div>
         )}
       </div>
