@@ -123,7 +123,8 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
       connect={true}
       audio={true}
       video={false}
-      onDisconnected={() => { router.push("/meetings"); }}
+      onDisconnected={() => { toast.error("Disconnected from room"); }}
+      onError={(err) => { console.error("LiveKit error:", err); toast.error("Connection error"); }}
       className="h-screen w-screen fixed inset-0 bg-black select-none overflow-hidden z-[60]"
     >
       <RoomAudioRenderer />
