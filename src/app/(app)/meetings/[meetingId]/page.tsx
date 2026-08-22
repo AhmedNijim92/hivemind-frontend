@@ -82,10 +82,16 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
           // Get LiveKit token
           const res = await apiClient.post(`/api/v1/meetings/${meetingId}/token`, { isHost: m.hostId === userId });
           setLiveKitToken(res.data.token);
-          // Build LiveKit URL from current origin — gateway proxies /livekit to LiveKit server
-          const origin = window.location.origin;
-          const wsUrl = origin.replace("http://", "ws://").replace("https://", "wss://") + "/livekit";
-          setLiveKitUrl(res.data.url !== "__RESOLVE_FROM_ORIGIN__" ? res.data.url : wsUrl);
+          // Get LiveKit URL from config endpoint
+          try {
+            const configRes = await fetch("/api/config");
+            const config = await configRes.json();
+            setLiveKitUrl(config.livekitUrl || res.data.url);
+          } catch {
+            // Fallback: same origin /livekit path
+            const origin = window.location.origin;
+            setLiveKitUrl(origin.replace("http://", "ws://").replace("https://", "wss://") + "/livekit");
+          }
         }
       })
       .catch(() => setError("Unable to connect."))

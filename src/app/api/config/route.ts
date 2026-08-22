@@ -8,5 +8,6 @@ import { NextResponse } from "next/server";
 export function GET() {
   return NextResponse.json({
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "",
+    livekitUrl: process.env.LIVEKIT_URL || "",
   });
 }
