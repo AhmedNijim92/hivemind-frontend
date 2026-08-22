@@ -207,6 +207,15 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  /* Hide mobile nav and sidebar when in meeting room */
+  body.meeting-active nav[class*="fixed bottom"],
+  body.meeting-active aside[class*="hidden lg:flex"] {
+    display: none !important;
+  }
+  body.meeting-active main {
+    padding-bottom: 0 !important;
+  }
+
   /* Animated gradient border */
   .gradient-border {
     position: relative;

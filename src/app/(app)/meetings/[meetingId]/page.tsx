@@ -106,9 +106,18 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
   const participantList = participants ?? [userId ?? ""];
   const count = participantList.length;
   const isMainSpeakerSelf = participantList[0] === userId;
+  // Determine main speaker display info
+  const mainSpeakerName = isMainSpeakerSelf ? (currentUser?.name ?? "You") : (meetingData.title ?? "Host");
+  const mainSpeakerAvatar = isMainSpeakerSelf ? currentUser?.profilePictureUrl : null;
+
+  // Hide mobile nav when in meeting room
+  useEffect(() => {
+    document.body.classList.add("meeting-active");
+    return () => { document.body.classList.remove("meeting-active"); };
+  }, []);
 
   return (
-    <div className="h-screen w-screen fixed inset-0 bg-black select-none overflow-hidden">
+    <div className="h-screen w-screen fixed inset-0 bg-black select-none overflow-hidden z-[60]">
       {/* FULL-SCREEN BACKGROUND */}
       <div className="absolute inset-0 z-0">
         {isMainSpeakerSelf && videoOn ? (
@@ -125,16 +134,16 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 8, repeat: Infinity, ease: "linear" }} className="absolute -inset-5 rounded-full opacity-60" style={{ background: "conic-gradient(from 0deg, #8b5cf6, #3b82f6, #06b6d4, #ec4899, #8b5cf6)" }} />
                 <motion.div animate={micOn ? { scale: [1, 1.05, 1], opacity: [0.3, 0.7, 0.3] } : {}} transition={{ duration: 1.5, repeat: Infinity }} className="absolute -inset-5 rounded-full bg-purple-500/30 blur-md" />
                 <div className="relative h-40 w-40 sm:h-52 sm:w-52 rounded-full overflow-hidden ring-4 ring-black/60 shadow-2xl">
-                  {currentUser?.profilePictureUrl && isMainSpeakerSelf ? (
-                    <img src={currentUser.profilePictureUrl} alt={currentUser.name ?? "Speaker"} className="h-full w-full object-cover" />
+                  {mainSpeakerAvatar ? (
+                    <img src={mainSpeakerAvatar} alt={mainSpeakerName} className="h-full w-full object-cover" />
                   ) : (
                     <div className="h-full w-full rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center">
-                      <span className="text-5xl font-bold text-white">{(isMainSpeakerSelf ? currentUser?.name?.[0] : "?")?.toUpperCase()}</span>
+                      <span className="text-5xl font-bold text-white">{mainSpeakerName[0]?.toUpperCase() ?? "?"}</span>
                     </div>
                   )}
                 </div>
                 {participantList[0] === meetingData.hostId && <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="absolute -top-4 left-1/2 -translate-x-1/2"><Crown className="h-7 w-7 text-yellow-400 drop-shadow-lg" /></motion.div>}
-                <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 whitespace-nowrap"><span className="px-5 py-2 rounded-full bg-black/50 backdrop-blur-xl border border-white/10 text-sm font-semibold text-white shadow-lg">{isMainSpeakerSelf ? (currentUser?.name ?? "You") : "Speaker"}</span></div>
+                <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 whitespace-nowrap"><span className="px-5 py-2 rounded-full bg-black/50 backdrop-blur-xl border border-white/10 text-sm font-semibold text-white shadow-lg">{mainSpeakerName}</span></div>
               </div>
             </div>
           </div>
