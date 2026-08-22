@@ -20,6 +20,7 @@ import { useGroupContextStore } from "@/store/group-context-store";
 import { useUIStore } from "@/store/ui-store";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { StoriesBar } from "@/features/stories/stories-bar";
+import { LiveRoomsFeed } from "@/features/meetings/live-rooms-feed";
 import { cn } from "@/utils/cn";
 import { formatNumber } from "@/utils/format";
 
@@ -101,6 +102,9 @@ export default function FeedPage() {
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
         {/* Stories */}
         <StoriesBar />
+
+        {/* Live Rooms */}
+        <LiveRoomsFeed />
 
         {/* Active group context card */}
         {activeGroup && (
