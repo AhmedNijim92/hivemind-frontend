@@ -20,7 +20,7 @@ import { usePageTitle } from "@/hooks/use-page-title";
 import toast from "react-hot-toast";
 
 interface FloatingReaction { id: string; emoji: string; x: number; size: number; }
-interface ChatOverlayMessage { id: string; senderName: string; content: string; timestamp: number; }
+interface ChatOverlayMessage { id: string; senderName: string; senderAvatar: string | null; content: string; timestamp: number; }
 
 const REACTIONS = [
   { emoji: "❤️", icon: Heart },
@@ -85,10 +85,10 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
   useEffect(() => {
     if (chatMessages.length > prevMsgCountRef.current) {
       const newMsgs = chatMessages.slice(prevMsgCountRef.current);
-      setOverlayMessages((prev) => [...prev, ...newMsgs.map((m) => ({ id: m.id, senderName: m.senderName, content: m.content, timestamp: Date.now() }))].slice(-10));
+      setOverlayMessages((prev) => [...prev, ...newMsgs.map((m) => ({ id: m.id, senderName: m.senderName, senderAvatar: m.senderId === userId ? currentUser?.profilePictureUrl ?? null : null, content: m.content, timestamp: Date.now() }))].slice(-10));
     }
     prevMsgCountRef.current = chatMessages.length;
-  }, [chatMessages]);
+  }, [chatMessages, userId, currentUser?.profilePictureUrl]);
 
   useEffect(() => { if (!overlayMessages.length) return; const t = setInterval(() => { setOverlayMessages((p) => p.filter((m) => Date.now() - m.timestamp < 8000)); }, 1000); return () => clearInterval(t); }, [overlayMessages]);
 
@@ -168,7 +168,7 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
                 {overlayMessages.slice(-8).map((msg) => (
                   <motion.div key={msg.id} initial={{ opacity: 0, y: 20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10 }} className="pointer-events-auto">
                     <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-black/50 backdrop-blur-md border border-white/[0.06] w-fit max-w-full">
-                      <div className="h-6 w-6 rounded-full overflow-hidden flex-shrink-0"><Avatar name={msg.senderName} size="xs" className="h-full w-full" /></div>
+                      <div className="h-6 w-6 rounded-full overflow-hidden flex-shrink-0"><Avatar name={msg.senderName} src={msg.senderAvatar ?? undefined} size="xs" className="h-full w-full" /></div>
                       <span className="text-[11px] font-bold text-brand-300 flex-shrink-0">{msg.senderName}</span>
                       <span className="text-[12px] text-white/70 truncate">{msg.content}</span>
                     </div>
