@@ -174,7 +174,7 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
       <div className="fixed inset-0 pointer-events-none z-50">
         <AnimatePresence>
           {floatingReactions.map((r) => (
-            <motion.div key={r.id} initial={{ opacity: 1, y: "85vh", scale: 0.6, rotate: -10 }} animate={{ opacity: [1, 1, 0], y: "-10vh", scale: [0.6, 1.5, 1.2], rotate: [−10, 10, -5] }} exit={{ opacity: 0 }} transition={{ duration: 3, ease: "easeOut" }} className="absolute text-4xl drop-shadow-lg" style={{ left: `${r.x}%` }}>
+            <motion.div key={r.id} initial={{ opacity: 1, y: "85vh", scale: 0.6, rotate: -10 }} animate={{ opacity: [1, 1, 0], y: "-10vh", scale: [0.6, 1.5, 1.2], rotate: [-10, 10, -5] }} exit={{ opacity: 0 }} transition={{ duration: 3, ease: "easeOut" }} className="absolute text-4xl drop-shadow-lg" style={{ left: `${r.x}%` }}>
               {r.emoji}
             </motion.div>
           ))}
