@@ -99,9 +99,17 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
           try {
             const configRes = await fetch("/api/config");
             const config = await configRes.json();
-            setLiveKitUrl(config.livekitUrl || "wss://lookup-brick-debate-submit.trycloudflare.com");
+            const lkUrl = config.livekitUrl;
+            if (lkUrl && lkUrl !== "__SAME_ORIGIN__" && lkUrl !== "") {
+              setLiveKitUrl(lkUrl);
+            } else {
+              // Same origin — browser connects to same domain, Next.js proxies /rtc to LiveKit
+              const origin = window.location.origin;
+              setLiveKitUrl(origin.replace("http://", "ws://").replace("https://", "wss://"));
+            }
           } catch {
-            setLiveKitUrl("wss://lookup-brick-debate-submit.trycloudflare.com");
+            const origin = window.location.origin;
+            setLiveKitUrl(origin.replace("http://", "ws://").replace("https://", "wss://"));
           }
         }
       })

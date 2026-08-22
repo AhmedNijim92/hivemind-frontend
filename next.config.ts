@@ -50,6 +50,10 @@ const nextConfig: NextConfig = {
           source: "/ws/:path*",
           destination: `${apiGatewayUrl}/ws/:path*`,
         },
+        {
+          source: "/rtc/:path*",
+          destination: "http://livekit-livekit-server:80/rtc/:path*",
+        },
       ],
       afterFiles: [],
       fallback: [],
