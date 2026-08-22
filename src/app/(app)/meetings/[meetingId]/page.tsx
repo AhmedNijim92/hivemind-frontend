@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState, useCallback } from "react";
+import { use, useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Mic, MicOff, Video, VideoOff, PhoneOff, Users,
@@ -93,13 +93,13 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
   }, [meetingId, userId]);
 
   // Chat overlay
-  const prevMsgCountRef = useState(0);
+  const prevMsgCountRef = useRef(0);
   useEffect(() => {
-    if (chatMessages.length > (prevMsgCountRef[0] ?? 0)) {
-      const newMsgs = chatMessages.slice(prevMsgCountRef[0] ?? 0);
-      setOverlayMessages((prev) => [...prev, ...newMsgs.map((m) => ({ id: m.id, senderName: m.senderName, content: m.content, timestamp: Date.now() }))].slice(-10));
+    if (chatMessages.length > prevMsgCountRef.current) {
+      const newMsgs = chatMessages.slice(prevMsgCountRef.current);
+      setOverlayMessages((prev) => [...prev, ...newMsgs.map((m: any) => ({ id: m.id, senderName: m.senderName, content: m.content, timestamp: Date.now() }))].slice(-10));
     }
-    prevMsgCountRef[1](chatMessages.length);
+    prevMsgCountRef.current = chatMessages.length;
   }, [chatMessages]);
   useEffect(() => { if (!overlayMessages.length) return; const t = setInterval(() => { setOverlayMessages((p) => p.filter((m) => Date.now() - m.timestamp < 8000)); }, 1000); return () => clearInterval(t); }, [overlayMessages]);
 
@@ -237,7 +237,7 @@ function MeetingRoomUI({
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="absolute left-4 sm:left-6 bottom-28 z-20 w-72 sm:w-80 max-h-[40vh] flex flex-col justify-end pointer-events-none">
             <div className="space-y-2 overflow-hidden">
               <AnimatePresence mode="popLayout">
-                {overlayMessages.slice(-8).map((msg) => (
+                {overlayMessages.slice(-8).map((msg: ChatOverlayMessage) => (
                   <motion.div key={msg.id} initial={{ opacity: 0, y: 20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10 }} className="pointer-events-auto">
                     <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-black/50 backdrop-blur-md border border-white/[0.06] w-fit max-w-full">
                       <Avatar name={msg.senderName} size="xs" className="h-6 w-6 flex-shrink-0" />
@@ -314,7 +314,7 @@ function MeetingRoomUI({
           <motion.button whileTap={{ scale: 0.9 }} onClick={handleLeave} className="h-12 px-5 sm:px-6 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center gap-2 text-sm font-bold shadow-lg shadow-red-500/30"><PhoneOff className="h-4 w-4" /><span className="hidden sm:inline">Leave</span></motion.button>
 
           {/* End (host) */}
-          {isHost && <motion.button whileTap={{ scale: 0.9 }} onClick={async () => { if (!groupId) return; haptic.heavy(); await meetingService.endMeeting(groupId, meetingId); toast.success("Room ended"); router.push("/meetings"); }} className="hidden sm:flex h-12 px-4 rounded-full bg-white/5 border border-white/10 text-white/50 hover:text-white items-center text-xs font-medium">End</motion.button>}
+          {isHost && <motion.button whileTap={{ scale: 0.9 }} onClick={async () => { if (!groupId) return; haptic.heavy(); await meetingService.endMeeting(groupId, meetingId); toast.success("Room ended"); handleLeave(); }} className="hidden sm:flex h-12 px-4 rounded-full bg-white/5 border border-white/10 text-white/50 hover:text-white items-center text-xs font-medium">End</motion.button>}
         </motion.div>
       </div>
     </>
