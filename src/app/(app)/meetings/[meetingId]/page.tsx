@@ -96,6 +96,12 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
   const sendReaction = (emoji: string) => { haptic.tap(); setFloatingReactions((p) => [...p, { id: crypto.randomUUID(), emoji, x: 75 + Math.random() * 20, size: 1.5 + Math.random() * 1.5 }]); setTimeout(() => setFloatingReactions((p) => p.slice(1)), 4000); };
   const handleLeave = async () => { haptic.heavy(); mediaStream?.getTracks().forEach((t) => t.stop()); try { await meetingService.leaveMeeting(meetingId); } catch {} router.push("/meetings"); };
 
+  // Hide mobile nav when in meeting room
+  useEffect(() => {
+    document.body.classList.add("meeting-active");
+    return () => { document.body.classList.remove("meeting-active"); };
+  }, []);
+
   // Status screens
   if (loading) return (<div className="h-screen flex items-center justify-center bg-gradient-to-br from-[#0a0a1a] via-[#1a0a2e] to-[#0a1a2e]"><motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.4, 1, 0.4] }} transition={{ duration: 2, repeat: Infinity }}><div className="h-20 w-20 rounded-full bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-2xl shadow-brand-500/40"><Sparkles className="h-10 w-10 text-white" /></div></motion.div></div>);
   if (error || !meetingData) return (<div className="h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#0a0a1a] via-[#1a0a2e] to-[#0a1a2e] gap-6"><div className="h-24 w-24 rounded-full bg-white/5 backdrop-blur-xl flex items-center justify-center border border-white/10"><PhoneOff className="h-10 w-10 text-white/30" /></div><h1 className="text-lg font-bold text-white">{error}</h1><button onClick={() => router.push("/meetings")} className="px-5 py-2.5 rounded-full bg-white/5 border border-white/10 text-white/70 text-sm flex items-center gap-2"><ArrowLeft className="h-4 w-4" /> Back</button></div>);
@@ -109,12 +115,6 @@ export default function MeetingRoomPage({ params }: { params: Promise<{ meetingI
   // Determine main speaker display info
   const mainSpeakerName = isMainSpeakerSelf ? (currentUser?.name ?? "You") : (meetingData.title ?? "Host");
   const mainSpeakerAvatar = isMainSpeakerSelf ? currentUser?.profilePictureUrl : null;
-
-  // Hide mobile nav when in meeting room
-  useEffect(() => {
-    document.body.classList.add("meeting-active");
-    return () => { document.body.classList.remove("meeting-active"); };
-  }, []);
 
   return (
     <div className="h-screen w-screen fixed inset-0 bg-black select-none overflow-hidden z-[60]">
