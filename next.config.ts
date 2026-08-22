@@ -8,7 +8,7 @@ const securityHeaders = [
   { key: "X-XSS-Protection", value: "1; mode=block" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
-  { key: "Content-Security-Policy", value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.amazonaws.com; connect-src 'self' wss: ws:; font-src 'self' data:; media-src 'self' blob:; frame-ancestors 'none';" },
+  { key: "Content-Security-Policy", value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.amazonaws.com; connect-src 'self' https: wss: ws:; font-src 'self' data:; media-src 'self' blob:; frame-ancestors 'none';" },
 ];
 
 const apiGatewayUrl = process.env.API_GATEWAY_INTERNAL_URL || "http://api-gateway:8080";
