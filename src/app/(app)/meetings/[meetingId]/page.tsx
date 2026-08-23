@@ -198,6 +198,19 @@ function MeetingRoomUI({
   const isCamOn = localParticipant.isCameraEnabled;
   const count = participants.length;
 
+  // Fetch profiles for all participants
+  const [participantProfiles, setParticipantProfiles] = useState<Record<string, { name: string; profilePictureUrl: string | null }>>({});
+  useEffect(() => {
+    const identities = participants.map((p: any) => p.identity).filter((id: string) => id && id !== userId);
+    identities.forEach((id: string) => {
+      if (!participantProfiles[id]) {
+        apiClient.get(`/api/v1/users/${id}`).then((res) => {
+          setParticipantProfiles((prev) => ({ ...prev, [id]: { name: res.data.name, profilePictureUrl: res.data.profilePictureUrl } }));
+        }).catch(() => {});
+      }
+    });
+  }, [participants, userId]);
+
   // Hand raise sends to backend
   const toggleHandRaise = () => {
     haptic.tap();
@@ -232,13 +245,18 @@ function MeetingRoomUI({
                   {participants.map((p) => (
                     <motion.div key={p.identity} initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex flex-col items-center gap-2">
                       <div className={`relative h-24 w-24 sm:h-32 sm:w-32 rounded-full overflow-hidden ring-4 ${p.isSpeaking ? "ring-green-400/60" : "ring-white/10"} shadow-xl transition-all`}>
-                        {currentUser?.profilePictureUrl && p.identity === localParticipant.localParticipant?.identity ? (
-                          <img src={currentUser.profilePictureUrl} alt={p.name ?? p.identity} className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="h-full w-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center">
-                            <span className="text-3xl font-bold text-white">{(p.name ?? p.identity)?.[0]?.toUpperCase() ?? "?"}</span>
-                          </div>
-                        )}
+                        {(() => {
+                          const isSelf = p.identity === localParticipant.localParticipant?.identity;
+                          const avatarUrl = isSelf ? currentUser?.profilePictureUrl : participantProfiles[p.identity]?.profilePictureUrl;
+                          if (avatarUrl) {
+                            return <img src={avatarUrl} alt={p.name ?? p.identity} className="h-full w-full object-cover" />;
+                          }
+                          return (
+                            <div className="h-full w-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center">
+                              <span className="text-3xl font-bold text-white">{(p.name ?? participantProfiles[p.identity]?.name ?? p.identity)?.[0]?.toUpperCase() ?? "?"}</span>
+                            </div>
+                          );
+                        })()}
                         {p.isSpeaking && (
                           <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 0.8, repeat: Infinity }} className="absolute inset-0 rounded-full ring-4 ring-green-400/40" />
                         )}
