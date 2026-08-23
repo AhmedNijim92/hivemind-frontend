@@ -265,7 +265,7 @@ function MeetingRoomUI({
             <motion.button whileTap={{ scale: 0.85 }} onClick={handleLeave} className="h-10 w-10 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/70"><ArrowLeft className="h-4 w-4" /></motion.button>
             <h1 className="text-sm font-bold text-white drop-shadow-lg truncate max-w-[120px] sm:max-w-[200px]">{meetingData.title}</h1>
             <span className="flex items-center gap-1.5 text-[10px] bg-red-500 text-white px-2.5 py-1 rounded-full font-bold shadow-lg shadow-red-500/40"><span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" /> LIVE</span>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-xl border border-white/10"><Users className="h-3 w-3 text-white/60" /><span className="text-xs font-semibold text-white/80">{count}</span></div>
+            <button onClick={() => setShowAdminPanel(!showAdminPanel)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 hover:bg-white/10 transition-all cursor-pointer"><Users className="h-3 w-3 text-white/60" /><span className="text-xs font-semibold text-white/80">{count}</span></button>
           </div>
           <div className="flex items-center gap-2">
             <motion.button whileTap={{ scale: 0.85 }} onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/meetings/${meetingId}`); toast.success("Link copied"); }} className="h-9 w-9 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/60 hover:text-white"><Copy className="h-3.5 w-3.5" /></motion.button>
@@ -279,7 +279,7 @@ function MeetingRoomUI({
 
       {/* ADMIN PANEL */}
       <AnimatePresence>
-        {showAdminPanel && isHost && (
+        {showAdminPanel && (
           <MeetingAdminPanel
             meetingId={meetingId}
             open={showAdminPanel}
