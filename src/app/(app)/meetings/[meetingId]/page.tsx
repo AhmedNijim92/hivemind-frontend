@@ -4,7 +4,7 @@ import { use, useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Mic, MicOff, Video, VideoOff, PhoneOff, Users,
-  Hand, ArrowLeft, Copy, Send, Crown,
+  Hand, ArrowLeft, Copy, Send, Crown, Shield,
   MessageCircle, Heart, Flame, ThumbsUp, Laugh,
   Sparkles, Zap,
 } from "lucide-react";
@@ -29,6 +29,7 @@ import { useHaptic } from "@/hooks/use-haptic";
 import { meetingService } from "@/services/meeting.service";
 import { apiClient } from "@/services/api-client";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { MeetingAdminPanel } from "@/features/meetings/meeting-admin-panel";
 import toast from "react-hot-toast";
 
 interface FloatingReaction { id: string; emoji: string; x: number; size: number; }
@@ -190,10 +191,26 @@ function MeetingRoomUI({
   const localParticipant = useLocalParticipant();
   const tracks = useTracks([Track.Source.Camera, Track.Source.Microphone], { onlySubscribed: false });
   const room = useRoomContext();
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const userId = useAuthStore((s) => s.userId);
 
   const isMicOn = localParticipant.isMicrophoneEnabled;
   const isCamOn = localParticipant.isCameraEnabled;
   const count = participants.length;
+
+  // Hand raise sends to backend
+  const toggleHandRaise = () => {
+    haptic.tap();
+    const newState = !handRaised;
+    setHandRaised(newState);
+    if (newState) {
+      apiClient.post(`/api/v1/meetings/${meetingId}/raise-hand`).catch(() => {});
+      toast("✋ Hand raised — waiting for admin");
+    } else {
+      apiClient.delete(`/api/v1/meetings/${meetingId}/raise-hand`).catch(() => {});
+      toast("Hand lowered");
+    }
+  };
 
   return (
     <>
@@ -253,9 +270,25 @@ function MeetingRoomUI({
           <div className="flex items-center gap-2">
             <motion.button whileTap={{ scale: 0.85 }} onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/meetings/${meetingId}`); toast.success("Link copied"); }} className="h-9 w-9 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/60 hover:text-white"><Copy className="h-3.5 w-3.5" /></motion.button>
             <motion.button whileTap={{ scale: 0.85 }} onClick={() => setShowChat(!showChat)} className={`h-9 w-9 rounded-full backdrop-blur-xl border flex items-center justify-center ${showChat ? "bg-brand-500/30 border-brand-500/50 text-brand-300" : "bg-black/40 border-white/10 text-white/60"}`}><MessageCircle className="h-3.5 w-3.5" /></motion.button>
+            {isHost && (
+              <motion.button whileTap={{ scale: 0.85 }} onClick={() => setShowAdminPanel(!showAdminPanel)} className={`h-9 w-9 rounded-full backdrop-blur-xl border flex items-center justify-center ${showAdminPanel ? "bg-brand-500/30 border-brand-500/50 text-brand-300" : "bg-black/40 border-white/10 text-white/60"}`}><Shield className="h-3.5 w-3.5" /></motion.button>
+            )}
           </div>
         </div>
       </header>
+
+      {/* ADMIN PANEL */}
+      <AnimatePresence>
+        {showAdminPanel && isHost && (
+          <MeetingAdminPanel
+            meetingId={meetingId}
+            open={showAdminPanel}
+            onClose={() => setShowAdminPanel(false)}
+            participants={participants.map((p: any) => p.identity)}
+            isHost={isHost}
+          />
+        )}
+      </AnimatePresence>
 
       {/* CHAT OVERLAY */}
       <AnimatePresence>
@@ -315,7 +348,7 @@ function MeetingRoomUI({
 
           {/* Hand raise */}
           <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.85 }}
-            onClick={() => { haptic.tap(); setHandRaised(!handRaised); toast(handRaised ? "Hand lowered" : "✋ Raised"); }}
+            onClick={() => toggleHandRaise()}
             className={`h-12 w-12 rounded-full flex items-center justify-center transition-all border ${handRaised ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" : "bg-white/5 text-white/40 border-white/10"}`}
           ><Hand className="h-5 w-5" /></motion.button>
 
