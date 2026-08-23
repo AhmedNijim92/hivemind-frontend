@@ -39,7 +39,11 @@ export function sanitizeUrl(url: string | null | undefined): string | null {
   if (!url) return null;
   try {
     const parsed = new URL(url);
-    if (["http:", "https:", "data:"].includes(parsed.protocol)) {
+    if (["http:", "https:"].includes(parsed.protocol)) {
+      return url;
+    }
+    // Only allow data: URLs for images
+    if (parsed.protocol === "data:" && url.startsWith("data:image/")) {
       return url;
     }
     return null;
